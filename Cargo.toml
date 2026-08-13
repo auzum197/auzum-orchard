@@ -86,6 +86,10 @@ bench = false
 name = "builder"
 path = "tests/builder.rs"
 
+[[test]]
+name = "platform_smoke"
+path = "tests/platform_smoke.rs"
+
 [[bench]]
 name = "circuit"
 path = "benches/circuit.rs"
