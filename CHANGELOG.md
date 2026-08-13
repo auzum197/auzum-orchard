@@ -8,6 +8,7 @@ and this project adheres to Rust's notion of
 ## [Unreleased]
 
 ### Changed
+
 - CI now runs a focused proof-creation, individual-verification, and
   batch-verification smoke test on macOS and Windows.
 - MSRV is now 1.88.
