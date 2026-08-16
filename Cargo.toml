@@ -15,11 +15,8 @@ rust-version = "1.88"
 name = "zakura-orchard"
 version = "0.15.5"
 authors = [
+    "Dev Ojha <ValarDragon@users.noreply.github.com>",
     "Sean Bowe <ewillbefull@gmail.com>",
-    "Jack Grigg <thestr4d@gmail.com>",
-    "Daira-Emma Hopwood <daira@jacaranda.org>",
-    "Ying Tong Lai",
-    "Kris Nuttycombe <kris@nutty.land>",
 ]
 build = false
 autolib = false
