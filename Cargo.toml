@@ -24,6 +24,11 @@ autobins = false
 autoexamples = false
 autotests = false
 autobenches = false
+exclude = [
+    "/.gitignore",
+    "/AGENTS.md",
+    "/rust-toolchain.toml",
+]
 description = "The Orchard shielded transaction protocol"
 documentation = "https://docs.rs/zakura-orchard"
 readme = "README.md"
