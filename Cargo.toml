@@ -12,7 +12,7 @@
 [package]
 edition = "2021"
 rust-version = "1.88"
-name = "orchard"
+name = "zakura-orchard"
 version = "0.15.5"
 authors = [
     "Sean Bowe <ewillbefull@gmail.com>",
@@ -28,7 +28,7 @@ autoexamples = false
 autotests = false
 autobenches = false
 description = "The Orchard shielded transaction protocol"
-documentation = "https://docs.rs/orchard"
+documentation = "https://docs.rs/zakura-orchard"
 readme = "README.md"
 keywords = ["zcash"]
 categories = ["cryptography::cryptocurrencies"]
@@ -143,6 +143,7 @@ path = "../halo2_gadgets"
 version = "0.5"
 optional = true
 default-features = false
+package = "zakura-halo2-gadgets"
 
 [dependencies.halo2_proofs]
 path = "../halo2_proofs"
@@ -153,6 +154,7 @@ features = [
 ]
 optional = true
 default-features = false
+package = "zakura-halo2-proofs"
 
 [dependencies.hex]
 version = "0.4"
@@ -181,6 +183,7 @@ default-features = false
 path = "../pasta_curves"
 version = "0.5.2"
 features = ["glv"]
+package = "zakura-pasta-curves"
 
 [dependencies.plotters]
 version = "0.3.0"
@@ -189,7 +192,7 @@ optional = true
 [dependencies.poseidon]
 path = "../halo2_poseidon"
 version = "0.1"
-package = "halo2_poseidon"
+package = "zakura-halo2-poseidon"
 
 [dependencies.proptest]
 version = ">=1.0.0, <1.7.0"
@@ -207,6 +210,7 @@ default-features = false
 path = "../reddsa"
 version = "0.5"
 default-features = false
+package = "zakura-reddsa"
 
 [dependencies.serde]
 version = "1.0"
@@ -216,6 +220,7 @@ default-features = false
 [dependencies.sinsemilla]
 path = "../sinsemilla"
 version = "0.1"
+package = "zakura-sinsemilla"
 
 [dependencies.subtle]
 version = "2.6"
@@ -245,6 +250,7 @@ version = "0.4"
 path = "../halo2_gadgets"
 version = "0.5"
 features = ["test-dependencies"]
+package = "zakura-halo2-gadgets"
 
 [dev-dependencies.hex]
 version = "0.4"
