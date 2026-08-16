@@ -33,7 +33,7 @@ readme = "README.md"
 keywords = ["zcash"]
 categories = ["cryptography::cryptocurrencies"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/zcash/orchard"
+repository = "https://github.com/zakura-core/libraries"
 
 [package.metadata.docs.rs]
 all-features = true
