@@ -1,11 +1,23 @@
-# orchard [![Crates.io](https://img.shields.io/crates/v/orchard.svg)](https://crates.io/crates/orchard) #
+# zakura-orchard [![Crates.io](https://img.shields.io/crates/v/zakura-orchard.svg)](https://crates.io/crates/zakura-orchard) #
+
+`zakura-orchard` is the [Zakura](https://github.com/zakura-core/zakura) fork of
+the upstream [`orchard`](https://crates.io/crates/orchard) crate from
+[zcash/orchard](https://github.com/zcash/orchard), maintained in
+[zakura-core/libraries](https://github.com/zakura-core/libraries). The library
+target keeps the upstream name, so `use orchard::…` paths are unchanged. Use it
+as a drop-in replacement by renaming the dependency:
+
+```toml
+[dependencies]
+orchard = { package = "zakura-orchard", version = "0.15" }
+```
 
 Requires Rust 1.88+.
 
 ## Documentation
 
 - [The Orchard Book](https://zcash.github.io/orchard/)
-- [Crate documentation](https://docs.rs/orchard)
+- [Crate documentation](https://docs.rs/zakura-orchard)
 
 ## `no_std` compatibility
 
