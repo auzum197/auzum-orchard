@@ -8,6 +8,9 @@ and this project adheres to Rust's notion of
 
 ## [Unreleased]
 
+- The Sinsemilla Merkle CRH domain is now initialized once and reused for
+  Orchard and Ironwood commitment-tree hashing instead of deriving the same
+  generator for every node.
 - Added `ProvingKey::verifying_key` to reuse the verifying key generated as
   part of proving-key construction.
 - Added reproducible one-Action prover and validated-corpus batch-verifier
