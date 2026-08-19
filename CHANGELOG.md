@@ -15,6 +15,11 @@ and this project adheres to Rust's notion of
   generator for every node.
 - Added `ProvingKey::verifying_key` to reuse the verifying key generated as
   part of proving-key construction.
+- Added the opt-in `weighted-merkle` feature, which reuses a cached 52-word
+  position-weighted Sinsemilla domain and omits incomplete-addition checks that
+  are assumed infeasible under the discrete-logarithm relation (DLR)
+  assumption. The default remains the lower-memory generic fused Sinsemilla
+  evaluator with exact partial-function semantics.
 - Added reproducible one-Action prover and validated-corpus batch-verifier
   benchmark harnesses.
 - The Sinsemilla note-commitment domain is now initialized once and reused
