@@ -26,6 +26,19 @@ must enable the `spin_no_std` feature of the `lazy_static` crate. This is
 needed because the `--no-default-features` build of `lazy_static` still relies
 on `std`.
 
+## Orchard Merkle hashing ##
+
+The optional `weighted-merkle` feature caches a 3.25 MiB table to speed up
+Orchard Merkle hashing. It is opt-in so that full-node applications can enable
+the higher-throughput evaluator, while wallets and other memory-sensitive
+applications use the generic fused Sinsemilla evaluator by default. Enable it
+on the dependency with `features = ["weighted-merkle"]`.
+
+The fixed-length evaluator omits Sinsemilla's incomplete-addition checks. An
+input that triggers one of these exceptional cases would exhibit a nontrivial
+discrete-logarithm relation between independently generated Sinsemilla
+points. The generic evaluator retains the exact partial-function checks.
+
 ## License
 
 Copyright 2020-2023 The Electric Coin Company.
