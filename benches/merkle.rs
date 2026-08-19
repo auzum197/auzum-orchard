@@ -5,7 +5,7 @@ use group::ff::{FromUniformBytes, PrimeField};
 use incrementalmerkletree::{Hashable, Level};
 use orchard::tree::MerkleHashOrchard;
 use pasta_curves::pallas;
-use rand::{RngCore, SeedableRng};
+use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 
 /// A 1,024-leaf subtree is large enough to amortize fixed hash setup.

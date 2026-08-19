@@ -187,7 +187,7 @@ impl DynamicUsage for Action<redpallas::Signature<SpendAuth>> {
 #[cfg(any(test, feature = "test-dependencies"))]
 #[cfg_attr(docsrs, doc(cfg(feature = "test-dependencies")))]
 pub(crate) mod testing {
-    use rand::{rngs::StdRng, RngCore, SeedableRng};
+    use rand::{rngs::StdRng, Rng, SeedableRng};
     use reddsa::orchard::SpendAuth;
     use zcash_note_encryption::Domain as _;
 
@@ -200,6 +200,7 @@ pub(crate) mod testing {
         },
         note_encryption::{OrchardDomain, OrchardNoteEncryption},
         primitives::redpallas::{self, testing::arb_valid_spendauth_keypair},
+        rng_compat::RngCore06,
         value::{NoteValue, ValueCommitTrapdoor, ValueCommitment},
         Note, NoteVersion,
     };
@@ -216,13 +217,17 @@ pub(crate) mod testing {
         note: Note,
         cv_net: &ValueCommitment,
         cmx: &ExtractedNoteCommitment,
-        mut rng: impl RngCore,
+        mut rng: impl Rng,
     ) -> TransmittedNoteCiphertext {
         let encryptor = OrchardNoteEncryption::new(None, note, [0u8; 512]);
         TransmittedNoteCiphertext {
             epk_bytes: OrchardDomain::epk_bytes(encryptor.epk()).0,
             enc_ciphertext: encryptor.encrypt_note_plaintext(),
-            out_ciphertext: encryptor.encrypt_outgoing_plaintext(cv_net, cmx, &mut rng),
+            out_ciphertext: encryptor.encrypt_outgoing_plaintext(
+                cv_net,
+                cmx,
+                &mut RngCore06::new(&mut rng),
+            ),
         }
     }
 

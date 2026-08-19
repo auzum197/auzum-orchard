@@ -5,7 +5,7 @@ use core::iter;
 use core::ops::Deref;
 
 use ff::{Field, FromUniformBytes, PrimeField, PrimeFieldBits};
-use group::{prime::PrimeCurveAffine, Curve, Group, GroupEncoding, WnafBase, WnafScalar};
+use group::{Curve, CurveAffine as _, Group, GroupEncoding, WnafBase, WnafScalar};
 #[cfg(feature = "circuit")]
 use halo2_gadgets::{poseidon::primitives as poseidon, sinsemilla::primitives as sinsemilla};
 #[cfg(feature = "std")]
@@ -375,9 +375,11 @@ pub fn i2lebsp<const NUM_BITS: usize>(int: u64) -> [bool; NUM_BITS] {
 mod tests {
     use super::{extract_p_bottom, extract_p_bottom_batch, i2lebsp, lebs2ip};
 
-    use group::{prime::PrimeCurveAffine, Group};
+    use group::{CurveAffine as _, Group};
     use pasta_curves::{arithmetic::CurveAffine, pallas};
-    use rand::{rngs::OsRng, RngCore};
+    use rand::Rng;
+
+    use crate::rng_compat::OsRng;
     use sinsemilla::HashDomain;
 
     #[test]
