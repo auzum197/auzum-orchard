@@ -2068,7 +2068,9 @@ mod tests {
     };
     use pasta_curves::{arithmetic::CurveAffine, pallas};
 
-    use rand::{rngs::OsRng, RngCore};
+    use rand::Rng;
+
+    use crate::rng_compat::OsRng;
 
     #[test]
     fn note_commit() {
@@ -2244,7 +2246,7 @@ mod tests {
                     self.psi,
                 )?;
 
-                let rcm = pallas::Scalar::random(OsRng);
+                let rcm = pallas::Scalar::random(&mut OsRng);
                 let rcm_gadget = ScalarFixed::new(
                     ecc_chip.clone(),
                     layouter.namespace(|| "rcm"),

@@ -384,10 +384,10 @@ impl Zip32Derivation {
 
 #[cfg(all(test, feature = "circuit"))]
 mod tests {
+    use crate::rng_compat::OsRng;
     use ff::{Field, PrimeField};
     use incrementalmerkletree::{Marking, Retention};
     use pasta_curves::pallas;
-    use rand::rngs::OsRng;
     use shardtree::{store::memory::MemoryShardStore, ShardTree};
 
     use crate::{
