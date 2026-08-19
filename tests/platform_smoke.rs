@@ -9,7 +9,7 @@ use orchard::{
     tree::MerkleHashOrchard,
     value::NoteValue,
 };
-use rand::rngs::OsRng;
+use rand::rng;
 
 const OUTPUT_VALUE: u64 = 5_000;
 const TEST_MEMO: [u8; 512] = [0; 512];
@@ -17,7 +17,7 @@ const TEST_SPENDING_KEY: [u8; 32] = [0; 32];
 
 #[test]
 fn creates_and_verifies_proof_individually_and_in_batch() {
-    let mut rng = OsRng;
+    let mut rng = rng();
     let bundle_version = BundleVersion::ironwood_v3();
     let circuit_version = bundle_version.circuit_version();
     let proving_key = ProvingKey::build(circuit_version);
@@ -51,7 +51,7 @@ fn creates_and_verifies_proof_individually_and_in_batch() {
         .expect("bundle flags are representable in this format")
         .into();
     let proven = unauthorized.create_proof(&proving_key, &mut rng).unwrap();
-    let bundle = proven.apply_signatures(rng, sighash, &[]).unwrap();
+    let bundle = proven.apply_signatures(&mut rng, sighash, &[]).unwrap();
 
     assert!(matches!(bundle.verify_proof(&verifying_key), Ok(())));
     for action in bundle.actions() {
@@ -68,5 +68,5 @@ fn creates_and_verifies_proof_individually_and_in_batch() {
     let mut validator = BatchValidator::new(&verifying_key);
     validator.add_bundle(&bundle, sighash).unwrap();
     validator.add_bundle(&bundle, sighash).unwrap();
-    assert!(validator.validate(rng));
+    assert!(validator.validate(&mut rng));
 }

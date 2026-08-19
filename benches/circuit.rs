@@ -14,11 +14,9 @@ use orchard::{
     value::NoteValue,
     Anchor, Bundle,
 };
-use rand::rngs::OsRng;
+use rand::rng;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let rng = OsRng;
-
     let sk = SpendingKey::from_bytes([7; 32]).unwrap();
     let recipient = FullViewingKey::from(&sk).address_at(0u32, Scope::External);
 
@@ -38,7 +36,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 .add_output(None, recipient, NoteValue::from_raw(10), [0; 512])
                 .unwrap();
         }
-        let bundle: Bundle<_, i64> = builder.build(rng).unwrap().unwrap().0;
+        let bundle: Bundle<_, i64> = builder.build(rng()).unwrap().unwrap().0;
 
         let instances: Vec<_> = bundle
             .actions()
@@ -60,7 +58,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 b.iter(|| {
                     bundle
                         .authorization()
-                        .create_proof(&pk, &instances, rng)
+                        .create_proof(&pk, &instances, rng())
                         .unwrap()
                 });
             });
@@ -72,9 +70,9 @@ fn criterion_benchmark(c: &mut Criterion) {
         for num_recipients in recipients_range {
             let (bundle, instances) = create_bundle(num_recipients);
             let bundle = bundle
-                .create_proof(&pk, rng)
+                .create_proof(&pk, rng())
                 .unwrap()
-                .apply_signatures(rng, [0; 32], &[])
+                .apply_signatures(rng(), [0; 32], &[])
                 .unwrap();
             assert!(bundle.verify_proof(&vk).is_ok());
             group.bench_function(BenchmarkId::new("bundle", num_recipients), |b| {

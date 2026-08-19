@@ -8,14 +8,13 @@ use orchard::{
     value::NoteValue,
     Anchor, Bundle,
 };
-use rand::rngs::OsRng;
+use rand::rng;
 use zcash_note_encryption::{batch, try_compact_note_decryption, try_note_decryption};
 
 #[cfg(unix)]
 use pprof::criterion::{Output, PProfProfiler};
 
 fn bench_note_decryption(c: &mut Criterion) {
-    let rng = OsRng;
     let pk = ProvingKey::build(OrchardCircuitVersion::FixedPostNu6_2);
 
     let fvk = FullViewingKey::from(&SpendingKey::from_bytes([7; 32]).unwrap());
@@ -60,11 +59,11 @@ fn bench_note_decryption(c: &mut Criterion) {
         builder
             .add_output(None, recipient, NoteValue::from_raw(10), [0; 512])
             .unwrap();
-        let bundle: Bundle<_, i64> = builder.build(rng).unwrap().unwrap().0;
+        let bundle: Bundle<_, i64> = builder.build(rng()).unwrap().unwrap().0;
         bundle
-            .create_proof(&pk, rng)
+            .create_proof(&pk, rng())
             .unwrap()
-            .apply_signatures(rng, [0; 32], &[])
+            .apply_signatures(rng(), [0; 32], &[])
             .unwrap()
     };
     let action = bundle.actions().first();

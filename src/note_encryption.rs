@@ -526,7 +526,7 @@ impl CompactAction {
 /// Utilities for constructing test data.
 #[cfg(feature = "test-dependencies")]
 pub mod testing {
-    use rand::RngCore;
+    use rand::Rng;
     use zcash_note_encryption::Domain;
 
     use crate::{
@@ -541,7 +541,7 @@ pub mod testing {
     /// Creates a fake `CompactAction` paying the given recipient the specified value.
     ///
     /// Returns the `CompactAction` and the new note.
-    pub fn fake_compact_action<R: RngCore>(
+    pub fn fake_compact_action<R: Rng>(
         rng: &mut R,
         nf_old: Nullifier,
         recipient: Address,
@@ -581,7 +581,7 @@ pub mod testing {
 mod tests {
     use alloc::vec::Vec;
 
-    use rand::rngs::OsRng;
+    use crate::rng_compat::{OsRng, RngCore06};
     use zcash_note_encryption::{
         batch, try_compact_note_decryption, try_note_decryption, try_output_recovery_with_ovk,
         BatchDomain, Domain, EphemeralKeyBytes, NoteEncryption,
@@ -636,7 +636,11 @@ mod tests {
         let encrypted_note = TransmittedNoteCiphertext {
             epk_bytes: IronwoodDomain::epk_bytes(encryptor.epk()).0,
             enc_ciphertext: encryptor.encrypt_note_plaintext(),
-            out_ciphertext: encryptor.encrypt_outgoing_plaintext(&cv_net, &cmx, &mut rng),
+            out_ciphertext: encryptor.encrypt_outgoing_plaintext(
+                &cv_net,
+                &cmx,
+                &mut RngCore06::new(&mut rng),
+            ),
         };
         let action = Action::from_parts(
             nf_old,
@@ -756,7 +760,7 @@ mod tests {
 
             assert_eq!(ne.encrypt_note_plaintext().as_ref(), &tv.c_enc[..]);
             assert_eq!(
-                &ne.encrypt_outgoing_plaintext(&cv_net, &cmx, &mut OsRng)[..],
+                &ne.encrypt_outgoing_plaintext(&cv_net, &cmx, &mut RngCore06::new(&mut OsRng),)[..],
                 &tv.c_out[..]
             );
         }

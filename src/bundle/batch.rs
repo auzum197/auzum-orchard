@@ -3,7 +3,7 @@ use core::fmt;
 
 use halo2_proofs::plonk;
 use pasta_curves::vesta;
-use rand::{CryptoRng, RngCore};
+use rand::{CryptoRng, Rng};
 use tracing::debug;
 
 use super::{Authorized, Bundle};
@@ -118,7 +118,7 @@ impl<'a> BatchValidator<'a> {
     ///
     /// The cross-address-restriction capability is enforced when bundles are added (see
     /// [`Self::add_bundle`]), so it is already guaranteed here.
-    pub fn validate<R: RngCore + CryptoRng>(self, rng: R) -> bool {
+    pub fn validate<R: Rng + CryptoRng>(self, rng: R) -> bool {
         // https://p.z.cash/TCR:bad-txns-orchard-binding-signature-invalid?partial
 
         if self.signatures.is_empty() {
@@ -146,7 +146,7 @@ impl<'a> BatchValidator<'a> {
 
 #[cfg(test)]
 mod tests {
-    use rand::rngs::OsRng;
+    use crate::rng_compat::OsRng;
 
     use super::{BatchError, BatchValidator};
     use crate::{

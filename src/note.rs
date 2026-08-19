@@ -6,7 +6,7 @@ use blake2b_simd::Params as Blake2bParams;
 use ff::PrimeField;
 use group::GroupEncoding;
 use pasta_curves::pallas;
-use rand::RngCore;
+use rand::Rng;
 use subtle::CtOption;
 
 use crate::{
@@ -114,7 +114,7 @@ impl Rho {
 pub struct RandomSeed([u8; 32]);
 
 impl RandomSeed {
-    pub(crate) fn random(rng: &mut impl RngCore, rho: &Rho) -> Self {
+    pub(crate) fn random(rng: &mut impl Rng, rho: &Rho) -> Self {
         loop {
             let mut bytes = [0; 32];
             rng.fill_bytes(&mut bytes);
@@ -304,7 +304,7 @@ impl Note {
         value: NoteValue,
         rho: Rho,
         version: NoteVersion,
-        mut rng: impl RngCore,
+        mut rng: impl Rng,
     ) -> Self {
         loop {
             let note = Note::from_parts(
@@ -327,7 +327,7 @@ impl Note {
     /// [orcharddummynotes]: https://zips.z.cash/protocol/nu5.pdf#orcharddummynotes
     #[cfg_attr(feature = "unstable-voting-circuits", visibility::make(pub))]
     pub(crate) fn dummy(
-        rng: &mut impl RngCore,
+        rng: &mut impl Rng,
         rho: Option<Rho>,
         note_version: NoteVersion,
     ) -> (SpendingKey, FullViewingKey, Self) {
