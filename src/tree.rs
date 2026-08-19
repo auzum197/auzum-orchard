@@ -3,6 +3,8 @@
 use alloc::vec::Vec;
 use core::iter;
 
+#[cfg(feature = "weighted-merkle")]
+use crate::constants::sinsemilla::K;
 use crate::{
     constants::{
         sinsemilla::{i2lebsp_k, L_ORCHARD_MERKLE, MERKLE_CRH_PERSONALIZATION},
@@ -14,6 +16,8 @@ use crate::{
 
 use incrementalmerkletree::{Hashable, Level};
 use pasta_curves::pallas;
+#[cfg(feature = "weighted-merkle")]
+use sinsemilla::weighted::UncheckedFixedLengthHashDomain;
 use sinsemilla::HashDomain;
 
 use ff::{Field, PrimeField, PrimeFieldBits};
@@ -26,9 +30,53 @@ use subtle::{Choice, ConditionallySelectable, CtOption};
 
 // The uncommitted leaf is defined as pallas::Base(2).
 // <https://zips.z.cash/protocol/protocol.pdf#thmuncommittedorchard>
+/// A Merkle parent hash consumes a left and a right child.
+#[cfg(feature = "weighted-merkle")]
+const MERKLE_CRH_CHILDREN: usize = 2;
+/// The level word is followed by one field encoding for each child.
+#[cfg(feature = "weighted-merkle")]
+const MERKLE_CRH_BITS: usize = K + MERKLE_CRH_CHILDREN * L_ORCHARD_MERKLE;
+/// Orchard Merkle CRH inputs always pad to this many Sinsemilla words.
+#[cfg(feature = "weighted-merkle")]
+const MERKLE_CRH_WORDS: usize = MERKLE_CRH_BITS / K;
+#[cfg(feature = "weighted-merkle")]
+const _: () = assert!(MERKLE_CRH_BITS.is_multiple_of(K));
+
+#[cfg(feature = "weighted-merkle")]
+lazy_static! {
+    static ref MERKLE_CRH_DOMAIN: UncheckedFixedLengthHashDomain<MERKLE_CRH_WORDS> =
+        UncheckedFixedLengthHashDomain::new(&HashDomain::new(MERKLE_CRH_PERSONALIZATION));
+}
+
+#[cfg(not(feature = "weighted-merkle"))]
+lazy_static! {
+    static ref MERKLE_CRH_DOMAIN: HashDomain = HashDomain::new(MERKLE_CRH_PERSONALIZATION);
+}
+
+#[cfg(feature = "weighted-merkle")]
+fn merkle_crh(message: impl Iterator<Item = bool>) -> pallas::Base {
+    MERKLE_CRH_DOMAIN.hash(message)
+}
+
+#[cfg(not(feature = "weighted-merkle"))]
+fn merkle_crh(message: impl Iterator<Item = bool>) -> pallas::Base {
+    MERKLE_CRH_DOMAIN
+        .hash(message)
+        .unwrap_or(pallas::Base::zero())
+}
+
+#[cfg(feature = "weighted-merkle")]
+fn merkle_crh_to_point(message: impl Iterator<Item = bool>) -> CtOption<pallas::Point> {
+    CtOption::new(MERKLE_CRH_DOMAIN.hash_to_point(message), 1.into())
+}
+
+#[cfg(not(feature = "weighted-merkle"))]
+fn merkle_crh_to_point(message: impl Iterator<Item = bool>) -> CtOption<pallas::Point> {
+    MERKLE_CRH_DOMAIN.hash_to_point(message)
+}
+
 lazy_static! {
     static ref UNCOMMITTED_ORCHARD: pallas::Base = pallas::Base::from(2);
-    static ref MERKLE_CRH_DOMAIN: HashDomain = HashDomain::new(MERKLE_CRH_PERSONALIZATION);
     pub(crate) static ref EMPTY_ROOTS: Vec<MerkleHashOrchard> = {
         iter::empty()
             .chain(Some(MerkleHashOrchard::empty_leaf()))
@@ -222,9 +270,11 @@ impl MerkleHashOrchard {
         level: Level,
         pairs: impl IntoIterator<Item = (&'a Self, &'a Self)>,
     ) -> Vec<Self> {
-        extract_p_bottom_batch(pairs.into_iter().map(|(left, right)| {
-            MERKLE_CRH_DOMAIN.hash_to_point(merkle_crh_message(level, left, right))
-        }))
+        extract_p_bottom_batch(
+            pairs
+                .into_iter()
+                .map(|(left, right)| merkle_crh_to_point(merkle_crh_message(level, left, right))),
+        )
         .map(|hash| MerkleHashOrchard(hash.unwrap_or(pallas::Base::zero())))
         .collect()
     }
@@ -263,11 +313,7 @@ impl Hashable for MerkleHashOrchard {
     ///        layer = 31, l = 0
     ///      - when hashing to the final root, we produce the anchor with layer = 0, l = 31.
     fn combine(level: Level, left: &Self, right: &Self) -> Self {
-        MerkleHashOrchard(
-            MERKLE_CRH_DOMAIN
-                .hash(merkle_crh_message(level, left, right))
-                .unwrap_or(pallas::Base::zero()),
-        )
+        MerkleHashOrchard(merkle_crh(merkle_crh_message(level, left, right)))
     }
 
     fn empty_root(level: Level) -> Self {
@@ -293,9 +339,10 @@ impl<'de> Deserialize<'de> for MerkleHashOrchard {
 }
 
 /// Test utilities available under the `test-dependencies` feature flag.
-#[cfg(feature = "test-dependencies")]
+#[cfg(any(test, feature = "test-dependencies"))]
 pub mod testing {
-    use ff::Field;
+    use ff::{Field, FromUniformBytes};
+    use proptest::{arbitrary::any, strategy::Strategy};
     use rand::{
         distributions::{Distribution, Standard},
         RngCore,
@@ -303,11 +350,21 @@ pub mod testing {
 
     use super::MerkleHashOrchard;
 
+    /// Width required by the field's uniform-byte reduction.
+    const UNIFORM_BYTES: usize = 64;
+
     impl MerkleHashOrchard {
         /// Return a random fake `MerkleHashOrchard`.
         pub fn random(rng: &mut impl RngCore) -> Self {
             Standard.sample(rng)
         }
+    }
+
+    /// Generate an arbitrary Orchard note-commitment tree node.
+    pub fn arb_merkle_hash() -> impl Strategy<Value = MerkleHashOrchard> {
+        any::<[u8; UNIFORM_BYTES]>().prop_map(|bytes| {
+            MerkleHashOrchard(pasta_curves::pallas::Base::from_uniform_bytes(&bytes))
+        })
     }
 
     impl Distribution<MerkleHashOrchard> for Standard {
@@ -321,9 +378,8 @@ pub mod testing {
 mod tests {
     use {
         crate::{
-            constants::sinsemilla::MERKLE_CRH_PERSONALIZATION,
-            constants::MERKLE_DEPTH_ORCHARD,
-            tree::{merkle_crh_message, MerkleHashOrchard, EMPTY_ROOTS},
+            constants::{sinsemilla::MERKLE_CRH_PERSONALIZATION, MERKLE_DEPTH_ORCHARD},
+            tree::{merkle_crh_message, testing::arb_merkle_hash, MerkleHashOrchard, EMPTY_ROOTS},
         },
         alloc::vec::Vec,
         group::ff::{Field, PrimeField},
@@ -331,6 +387,7 @@ mod tests {
             frontier::Frontier, Hashable, Level, Marking, MerklePath, Retention,
         },
         pasta_curves::pallas,
+        proptest::prelude::*,
         rand::SeedableRng,
         rand_chacha::ChaCha20Rng,
         shardtree::{store::memory::MemoryShardStore, ShardTree},
@@ -398,6 +455,35 @@ mod tests {
             assert_eq!(
                 MerkleHashOrchard::combine(level, &left, &right),
                 combine_with_fresh_domain(level, &left, &right),
+            );
+        }
+    }
+
+    fn generic_combine(
+        domain: &HashDomain,
+        level: Level,
+        left: &MerkleHashOrchard,
+        right: &MerkleHashOrchard,
+    ) -> MerkleHashOrchard {
+        MerkleHashOrchard(
+            domain
+                .hash(merkle_crh_message(level, left, right))
+                .unwrap_or(pallas::Base::zero()),
+        )
+    }
+
+    proptest! {
+        #[test]
+        fn production_merkle_combine_matches_generic(
+            level in 0_u8..u8::try_from(MERKLE_DEPTH_ORCHARD).unwrap(),
+            left in arb_merkle_hash(),
+            right in arb_merkle_hash(),
+        ) {
+            let domain = HashDomain::new(MERKLE_CRH_PERSONALIZATION);
+            let level = Level::from(level);
+            prop_assert_eq!(
+                MerkleHashOrchard::combine(level, &left, &right),
+                generic_combine(&domain, level, &left, &right),
             );
         }
     }

@@ -78,6 +78,7 @@ verifier-fingerprint = [
     "circuit",
     "halo2_proofs/unstable-verifier-fingerprint",
 ]
+weighted-merkle = []
 
 [lib]
 name = "orchard"
@@ -107,6 +108,11 @@ required-features = ["circuit"]
 [[bench]]
 name = "small"
 path = "benches/small.rs"
+harness = false
+
+[[bench]]
+name = "merkle"
+path = "benches/merkle.rs"
 harness = false
 
 [[bench]]
