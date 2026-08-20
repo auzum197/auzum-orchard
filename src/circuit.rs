@@ -13,7 +13,7 @@ use halo2_proofs::{
     transcript::{Blake2bRead, Blake2bWrite},
 };
 use pasta_curves::{arithmetic::CurveAffine, pallas, vesta};
-use rand::RngCore;
+use rand::Rng;
 
 use self::{
     commit_ivk::{CommitIvkChip, CommitIvkConfig},
@@ -1318,7 +1318,7 @@ impl Proof {
         pk: &ProvingKey,
         circuits: &[Circuit],
         instances: &[Instance],
-        mut rng: impl RngCore,
+        mut rng: impl Rng,
     ) -> Result<Self, plonk::Error> {
         if circuits
             .iter()
@@ -1425,7 +1425,9 @@ mod tests {
     use ff::Field;
     use halo2_proofs::{circuit::Value, dev::MockProver};
     use pasta_curves::{pallas, vesta};
-    use rand::{rngs::OsRng, RngCore};
+    use rand::Rng;
+
+    use crate::rng_compat::OsRng;
 
     use super::{Circuit, Instance, OrchardCircuitVersion, Proof, VerifyingKey, K};
     use crate::{
@@ -1438,7 +1440,7 @@ mod tests {
 
     /// Generates a circuit and instance whose output note is addressed to an expanded
     /// receiver distinct from the spent note's.
-    fn generate_circuit_instance<R: RngCore>(
+    fn generate_circuit_instance<R: Rng>(
         rng: R,
         circuit_version: OrchardCircuitVersion,
     ) -> (Circuit, Instance) {
@@ -1447,14 +1449,14 @@ mod tests {
 
     /// Generates a circuit and instance whose output note is addressed to the spent
     /// note's expanded receiver, as the cross-address restriction requires.
-    fn generate_self_transfer_circuit_instance<R: RngCore>(
+    fn generate_self_transfer_circuit_instance<R: Rng>(
         rng: R,
         circuit_version: OrchardCircuitVersion,
     ) -> (Circuit, Instance) {
         generate_circuit_instance_inner(rng, circuit_version, true)
     }
 
-    fn generate_circuit_instance_inner<R: RngCore>(
+    fn generate_circuit_instance_inner<R: Rng>(
         mut rng: R,
         circuit_version: OrchardCircuitVersion,
         output_matches_spend: bool,

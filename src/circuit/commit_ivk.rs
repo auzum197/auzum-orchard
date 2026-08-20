@@ -687,6 +687,7 @@ mod tests {
         fixed_bases::COMMIT_IVK_PERSONALIZATION, OrchardCommitDomains, OrchardFixedBases,
         OrchardHashDomains, L_ORCHARD_BASE, T_Q,
     };
+    use crate::rng_compat::OsRng;
     use group::ff::{Field, PrimeField, PrimeFieldBits};
     use halo2_gadgets::{
         ecc::{
@@ -708,7 +709,6 @@ mod tests {
         plonk::{Circuit, ConstraintSystem, Error},
     };
     use pasta_curves::pallas;
-    use rand::rngs::OsRng;
 
     #[test]
     fn commit_ivk() {
@@ -832,7 +832,7 @@ mod tests {
                 )?;
 
                 // Use a random scalar for rivk
-                let rivk = pallas::Scalar::random(OsRng);
+                let rivk = pallas::Scalar::random(&mut OsRng);
                 let rivk_gadget = ScalarFixed::new(
                     ecc_chip.clone(),
                     layouter.namespace(|| "rivk"),

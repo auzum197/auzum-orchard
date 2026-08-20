@@ -40,6 +40,7 @@ pub mod note;
 pub mod note_encryption;
 pub mod pczt;
 pub mod primitives;
+mod rng_compat;
 #[cfg(not(feature = "unstable-voting-circuits"))]
 mod spec;
 #[cfg(feature = "unstable-voting-circuits")]
