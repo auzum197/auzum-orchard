@@ -8,6 +8,7 @@ and this project adheres to Rust's notion of
 
 ## [Unreleased]
 
+- Prepared the `1.0.0-rc.3` release.
 - Orchard proving-key generation now uses precomputed fixed-base Lagrange
   coefficients instead of recomputing them during every circuit synthesis.
   The generated table's header now carries its regeneration command, and both
