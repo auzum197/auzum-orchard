@@ -1792,10 +1792,14 @@ mod tests {
     }
 
     // TODO: recast as a proptest
-    fn round_trip_for_version(circuit_version: OrchardCircuitVersion, vk: &VerifyingKey) {
+    fn round_trip_for_version(
+        circuit_version: OrchardCircuitVersion,
+        vk: &VerifyingKey,
+        action_count: usize,
+    ) {
         let mut rng = OsRng;
 
-        let (circuits, instances): (Vec<_>, Vec<_>) = iter::once(())
+        let (circuits, instances): (Vec<_>, Vec<_>) = iter::repeat_n((), action_count)
             .map(|()| generate_circuit_instance(&mut rng, circuit_version))
             .unzip();
 
@@ -1852,7 +1856,7 @@ mod tests {
             "src/circuit_data/circuit_description_fixed",
             include_str!("circuit_data/circuit_description_fixed"),
         );
-        round_trip_for_version(OrchardCircuitVersion::FixedPostNu6_2, vk);
+        round_trip_for_version(OrchardCircuitVersion::FixedPostNu6_2, vk, 2);
     }
 
     #[test]
@@ -1862,7 +1866,7 @@ mod tests {
             "src/circuit_data/circuit_description_post_nu6_3",
             include_str!("circuit_data/circuit_description_post_nu6_3"),
         );
-        round_trip_for_version(OrchardCircuitVersion::PostNu6_3, vk);
+        round_trip_for_version(OrchardCircuitVersion::PostNu6_3, vk, 1);
     }
 
     const CIRCUIT_VERSIONS: [OrchardCircuitVersion; 3] = [
