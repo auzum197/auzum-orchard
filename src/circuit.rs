@@ -1132,6 +1132,12 @@ impl VerifyingKey {
     /// `orbits` feature, or its backend declined) and verification simply
     /// keeps its unprepared path. Callers may ignore the result; validators
     /// that expect the speedup can assert or log it.
+    ///
+    /// The prepared path is used only on pools of at most eight effective
+    /// threads — past that the unprepared planner out-scales it and halo2
+    /// falls back automatically — so arming never slows verification down,
+    /// but the speedup materializes on narrow pools (single-proof
+    /// verification, constrained validators), not on wide desktop pools.
     pub fn prepare_batch_validation(&self) -> bool {
         self.params.prepare_zero_checks()
     }
