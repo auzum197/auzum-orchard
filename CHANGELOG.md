@@ -24,7 +24,7 @@ and this project adheres to Rust's notion of
   caches a prepared fixed-base zero-check over the key's SRS (see
   `halo2_proofs::poly::commitment::Params::prepare_zero_checks`) and
   returns whether one was actually armed (`false` when halo2 was built
-  without its default `orbits` feature or its backend declined).
+  without its opt-in `orbits` feature or its backend declined).
   Long-lived validators should call it once per key: the halo2 verifier's
   final identity test then routes through the preparation, and a
   `BatchValidator` batch pays a single such check. Measured end to end on
