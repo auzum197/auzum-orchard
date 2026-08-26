@@ -8,16 +8,25 @@ and this project adheres to Rust's notion of
 
 ## [Unreleased]
 
+- Added `circuit::ProvingKey::prepare_proving`, which builds and caches
+  prepared fixed-base commitment tables over the key's SRS (see
+  `halo2_proofs::poly::commitment::Params::prepare_commitments`).
+  Long-lived provers should call it once per key; arming never slows
+  proving down (the prepared route is used only on pools of at most eight
+  effective threads, where it wins).
 - Kept the cached-plan witness-assignment benchmark lint-clean on current Rust
   toolchains.
 - Added `circuit::VerifyingKey::prepare_batch_validation`, which builds and
   caches a prepared fixed-base zero-check over the key's SRS (see
   `halo2_proofs::poly::commitment::Params::prepare_zero_checks`) and
   returns whether one was actually armed (`false` when halo2 was built
-  without its default `orbits` feature or its backend declined).
+  without its opt-in `orbits` feature or its backend declined).
   Long-lived validators should call it once per key: the halo2 verifier's
   final identity test then routes through the preparation, and a
-  `BatchValidator` batch pays a single such check. Measured end to end on
+  `BatchValidator` batch pays a single such check. The prepared check is
+  used on pools of at most eight effective threads; verification falls
+  back to the unprepared path on wider pools, so arming never slows
+  validation down. Measured end to end on
   Ironwood bundle batch validation, arming the key speeds small batches
   the most (about +22% at one bundle serially and +29% on an 8-worker
   pool — 32-worker cells drift too much between processes to quote —

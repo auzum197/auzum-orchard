@@ -1128,10 +1128,17 @@ impl VerifyingKey {
     /// need not.
     ///
     /// Returns whether a prepared check was actually built and cached;
-    /// `false` means arming was a no-op (halo2 built without its default
+    /// `false` means arming was a no-op (halo2 built without its opt-in
     /// `orbits` feature, or its backend declined) and verification simply
     /// keeps its unprepared path. Callers may ignore the result; validators
     /// that expect the speedup can assert or log it.
+    ///
+    /// The prepared path is used only on bounded-width pools (currently
+    /// eight effective threads) — past that the unprepared planner
+    /// out-scales it and halo2 falls back automatically — so arming never
+    /// slows verification down, but the speedup materializes on narrow
+    /// pools (single-proof verification, constrained validators), not on
+    /// wide desktop pools.
     pub fn prepare_batch_validation(&self) -> bool {
         self.params.prepare_zero_checks()
     }
@@ -1149,6 +1156,26 @@ pub struct ProvingKey {
 }
 
 impl ProvingKey {
+    /// Builds and caches prepared fixed-base commitment tables over this
+    /// key's SRS (see
+    /// `halo2_proofs::poly::commitment::Params::prepare_commitments`).
+    /// Long-lived provers (wallet backends, proving services) should call
+    /// this once after constructing the key: the prover's polynomial
+    /// commitments then evaluate through the preparations on bounded-width
+    /// pools (currently eight effective threads; measured 1.2–1.8x per
+    /// commitment there) and keep their usual multiexp on wider pools —
+    /// halo2 falls back automatically — so arming never slows proving
+    /// down. One-shot provers need not: preparation costs hundreds of
+    /// milliseconds and tens of mebibytes, amortized across proofs.
+    ///
+    /// Returns whether the tables were actually built and cached; `false`
+    /// means arming was a no-op (halo2 built without its opt-in `orbits`
+    /// feature, or its backend declined) and proving simply keeps its
+    /// unprepared path. Callers may ignore the result.
+    pub fn prepare_proving(&self) -> bool {
+        self.params.prepare_commitments()
+    }
+
     /// Builds the proving key for the given circuit version.
     ///
     /// See [`OrchardCircuitVersion`] for which version to use.
