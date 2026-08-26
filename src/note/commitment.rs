@@ -8,9 +8,9 @@
 
 use core::iter;
 
+use crate::once::OnceTable;
 use bitvec::{array::BitArray, order::Lsb0};
 use group::ff::{PrimeField, PrimeFieldBits};
-use lazy_static::lazy_static;
 use pasta_curves::pallas;
 use subtle::{ConstantTimeEq, CtOption};
 
@@ -20,13 +20,11 @@ use crate::{
     value::NoteValue,
 };
 
-lazy_static! {
-    static ref NOTE_COMMITMENT_DOMAIN: sinsemilla::CommitDomain =
-        sinsemilla::CommitDomain::new(NOTE_COMMITMENT_PERSONALIZATION);
-}
+static NOTE_COMMITMENT_DOMAIN: OnceTable<sinsemilla::CommitDomain> = OnceTable::new();
 
 fn note_commitment_domain() -> &'static sinsemilla::CommitDomain {
-    &NOTE_COMMITMENT_DOMAIN
+    NOTE_COMMITMENT_DOMAIN
+        .get_or_init(|| sinsemilla::CommitDomain::new(NOTE_COMMITMENT_PERSONALIZATION))
 }
 
 /// The trapdoor for a note commitment.
