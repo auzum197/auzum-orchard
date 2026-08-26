@@ -1128,7 +1128,7 @@ impl VerifyingKey {
     /// need not.
     ///
     /// Returns whether a prepared check was actually built and cached;
-    /// `false` means arming was a no-op (halo2 built without its default
+    /// `false` means arming was a no-op (halo2 built without its opt-in
     /// `orbits` feature, or its backend declined) and verification simply
     /// keeps its unprepared path. Callers may ignore the result; validators
     /// that expect the speedup can assert or log it.
@@ -1168,7 +1168,7 @@ impl ProvingKey {
     /// across proofs.
     ///
     /// Returns whether the tables were actually built and cached; `false`
-    /// means arming was a no-op (halo2 built without its default `orbits`
+    /// means arming was a no-op (halo2 built without its opt-in `orbits`
     /// feature, or its backend declined) and proving simply keeps its
     /// unprepared path. Callers may ignore the result.
     pub fn prepare_proving(&self) -> bool {
