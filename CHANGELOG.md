@@ -14,10 +14,6 @@ and this project adheres to Rust's notion of
   Long-lived provers should call it once per key; arming never slows
   proving down (the prepared route is used only on pools of at most eight
   effective threads, where it wins).
-- `circuit::VerifyingKey::prepare_batch_validation` documents halo2's new
-  thread-aware routing: the prepared check is used on pools of at most
-  eight effective threads and verification falls back to the unprepared
-  path on wider pools, so arming never slows validation down.
 - Kept the cached-plan witness-assignment benchmark lint-clean on current Rust
   toolchains.
 - Added `circuit::VerifyingKey::prepare_batch_validation`, which builds and
@@ -27,7 +23,10 @@ and this project adheres to Rust's notion of
   without its opt-in `orbits` feature or its backend declined).
   Long-lived validators should call it once per key: the halo2 verifier's
   final identity test then routes through the preparation, and a
-  `BatchValidator` batch pays a single such check. Measured end to end on
+  `BatchValidator` batch pays a single such check. The prepared check is
+  used on pools of at most eight effective threads; verification falls
+  back to the unprepared path on wider pools, so arming never slows
+  validation down. Measured end to end on
   Ironwood bundle batch validation, arming the key speeds small batches
   the most (about +22% at one bundle serially and +29% on an 8-worker
   pool — 32-worker cells drift too much between processes to quote —
