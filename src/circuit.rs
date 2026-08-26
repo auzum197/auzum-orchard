@@ -1155,6 +1155,26 @@ pub struct ProvingKey {
 }
 
 impl ProvingKey {
+    /// Builds and caches prepared fixed-base commitment tables over this
+    /// key's SRS (see
+    /// `halo2_proofs::poly::commitment::Params::prepare_commitments`).
+    /// Long-lived provers (wallet backends, proving services) should call
+    /// this once after constructing the key: the prover's polynomial
+    /// commitments then evaluate through the preparations on pools of at
+    /// most eight effective threads (measured 1.2–1.8x per commitment
+    /// there) and keep their usual multiexp on wider pools, so arming
+    /// never slows proving down. One-shot provers need not: preparation
+    /// costs hundreds of milliseconds and tens of mebibytes, amortized
+    /// across proofs.
+    ///
+    /// Returns whether the tables were actually built and cached; `false`
+    /// means arming was a no-op (halo2 built without its default `orbits`
+    /// feature, or its backend declined) and proving simply keeps its
+    /// unprepared path. Callers may ignore the result.
+    pub fn prepare_proving(&self) -> bool {
+        self.params.prepare_commitments()
+    }
+
     /// Builds the proving key for the given circuit version.
     ///
     /// See [`OrchardCircuitVersion`] for which version to use.
