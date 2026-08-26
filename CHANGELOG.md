@@ -8,6 +8,12 @@ and this project adheres to Rust's notion of
 
 ## [Unreleased]
 
+- Added `circuit::ProvingKey::prepare_proving`, which builds and caches
+  prepared fixed-base commitment tables over the key's SRS (see
+  `halo2_proofs::poly::commitment::Params::prepare_commitments`).
+  Long-lived provers should call it once per key; arming never slows
+  proving down (the prepared route is used only on pools of at most eight
+  effective threads, where it wins).
 - `circuit::VerifyingKey::prepare_batch_validation` documents halo2's new
   thread-aware routing: the prepared check is used on pools of at most
   eight effective threads and verification falls back to the unprepared
