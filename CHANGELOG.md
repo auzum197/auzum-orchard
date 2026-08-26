@@ -8,6 +8,10 @@ and this project adheres to Rust's notion of
 
 ## [Unreleased]
 
+- `circuit::VerifyingKey::prepare_batch_validation` documents halo2's new
+  thread-aware routing: the prepared check is used on pools of at most
+  eight effective threads and verification falls back to the unprepared
+  path on wider pools, so arming never slows validation down.
 - Kept the cached-plan witness-assignment benchmark lint-clean on current Rust
   toolchains.
 - Added `circuit::VerifyingKey::prepare_batch_validation`, which builds and
