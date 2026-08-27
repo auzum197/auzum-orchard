@@ -8,6 +8,7 @@ and this project adheres to Rust's notion of
 
 ## [Unreleased]
 
+- Prepared the `1.0.0-rc.4` release.
 - Added `circuit::ProvingKey::prepare_proving`, which builds and caches
   prepared fixed-base commitment tables over the key's SRS (see
   `halo2_proofs::poly::commitment::Params::prepare_commitments`).
