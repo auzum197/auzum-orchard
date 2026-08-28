@@ -1093,19 +1093,19 @@ impl Builder {
 
     /// Returns the action spend components that will be produced by the
     /// transaction being constructed
-    pub fn spends(&self) -> &Vec<impl InputView<()>> {
+    pub fn spends(&self) -> &Vec<impl InputView<()> + use<>> {
         &self.spends
     }
 
     /// Returns the action output components that will be produced by the
     /// transaction being constructed
-    pub fn outputs(&self) -> &Vec<impl OutputView> {
+    pub fn outputs(&self) -> &Vec<impl OutputView + use<>> {
         &self.outputs
     }
 
     /// Returns the wallet-controlled change outputs that will be produced by the
     /// transaction being constructed.
-    pub fn changes(&self) -> &Vec<impl OutputView> {
+    pub fn changes(&self) -> &Vec<impl OutputView + use<>> {
         &self.changes
     }
 

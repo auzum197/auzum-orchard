@@ -98,7 +98,7 @@ impl super::Bundle {
             })
             .collect::<Result<_, E>>()?;
 
-        Ok(if let Some(actions) = NonEmpty::from_vec(actions) {
+        Ok(match NonEmpty::from_vec(actions) { Some(actions) => {
             let value_balance = i64::try_from(self.value_sum)
                 .ok()
                 .and_then(|v| v.try_into().ok())
@@ -114,9 +114,9 @@ impl super::Bundle {
                 authorization,
                 self.bundle_version,
             ))
-        } else {
+        } _ => {
             None
-        })
+        }})
     }
 }
 
