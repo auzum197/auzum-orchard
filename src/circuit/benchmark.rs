@@ -3,14 +3,14 @@
 use alloc::vec::Vec;
 use ff::{Field, PrimeField};
 use halo2_proofs::{
-    circuit::{floor_planner, Value},
+    circuit::{Value, floor_planner},
     plonk::{
         Advice, Any, Assigned, Assignment, BatchVerifier, Circuit as PlonkCircuit, Column,
         ConstraintSystem, Error, Fixed, FloorPlanner, Instance as InstanceColumn, Selector,
     },
 };
 use pasta_curves::{pallas, vesta};
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{SeedableRng, rngs::StdRng};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{self, OpenOptions},
@@ -23,15 +23,15 @@ use std::{
 };
 
 use super::{
-    tests::generate_circuit_instance, Circuit, Instance, OrchardCircuitVersion, ProvingKey,
-    VerifyingKey, INSTANCE_COLUMNS, INSTANCE_ROWS, K,
+    Circuit, INSTANCE_COLUMNS, INSTANCE_ROWS, Instance, K, OrchardCircuitVersion, ProvingKey,
+    VerifyingKey, tests::generate_circuit_instance,
 };
 use crate::{
+    Anchor, Bundle,
     builder::{Builder, BundleType},
     bundle::{BundleVersion, Flags},
     keys::{FullViewingKey, Scope, SpendingKey},
     value::NoteValue,
-    Anchor, Bundle,
 };
 
 type Halo2Instances = Vec<Vec<Vec<vesta::Scalar>>>;

@@ -12,6 +12,7 @@ use zip32::ChildIndex;
 
 use super::{Action, Bundle, Output, Spend, Zip32Derivation};
 use crate::{
+    Address, Anchor, NOTE_COMMITMENT_TREE_DEPTH, Proof,
     bundle::{BundleVersion, Flags},
     keys::{FullViewingKey, SpendingKey},
     note::{
@@ -20,7 +21,6 @@ use crate::{
     primitives::redpallas::{self, SpendAuth},
     tree::{MerkleHashOrchard, MerklePath},
     value::{NoteValue, Sign, ValueCommitTrapdoor, ValueCommitment, ValueSum},
-    Address, Anchor, Proof, NOTE_COMMITMENT_TREE_DEPTH,
 };
 
 impl Bundle {

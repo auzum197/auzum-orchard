@@ -17,8 +17,8 @@ use pasta_curves::{
 use subtle::{ConditionallySelectable, CtOption};
 
 use crate::constants::{
-    fixed_bases::COMMIT_IVK_PERSONALIZATION, util::gen_const_array,
-    KEY_DIVERSIFICATION_PERSONALIZATION, L_ORCHARD_BASE,
+    KEY_DIVERSIFICATION_PERSONALIZATION, L_ORCHARD_BASE, fixed_bases::COMMIT_IVK_PERSONALIZATION,
+    util::gen_const_array,
 };
 
 pub(crate) use zcash_spec::PrfExpand;

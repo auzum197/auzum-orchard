@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::hint::black_box;
 
-use criterion::{criterion_group, criterion_main, BatchSize, Criterion, Throughput};
+use criterion::{BatchSize, Criterion, Throughput, criterion_group, criterion_main};
 use group::ff::{FromUniformBytes, PrimeField};
 use incrementalmerkletree::{Hashable, Level};
 #[cfg(feature = "weighted-merkle")]

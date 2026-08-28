@@ -13,15 +13,15 @@
 
 use std::time::Instant;
 
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{SeedableRng, rngs::StdRng};
 
 use orchard::{
+    Anchor, Bundle,
     builder::{Builder, BundleType},
     bundle::{BatchValidator, BundleVersion, Flags},
     circuit::{OrchardCircuitVersion, ProvingKey, VerifyingKey},
     keys::{FullViewingKey, Scope, SpendingKey},
     value::NoteValue,
-    Anchor, Bundle,
 };
 
 const BATCH_SIZES: [usize; 7] = [1, 2, 4, 8, 16, 32, 64];

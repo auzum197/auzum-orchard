@@ -6,12 +6,13 @@ use core::fmt;
 use blake2b_simd::{Hash, Params};
 use group::ff::PrimeField;
 use zcash_note_encryption::{
-    BatchDomain, Domain, EphemeralKeyBytes, NotePlaintextBytes, OutPlaintextBytes,
-    OutgoingCipherKey, ShieldedOutput, COMPACT_NOTE_SIZE, ENC_CIPHERTEXT_SIZE, NOTE_PLAINTEXT_SIZE,
-    OUT_PLAINTEXT_SIZE,
+    BatchDomain, COMPACT_NOTE_SIZE, Domain, ENC_CIPHERTEXT_SIZE, EphemeralKeyBytes,
+    NOTE_PLAINTEXT_SIZE, NotePlaintextBytes, OUT_PLAINTEXT_SIZE, OutPlaintextBytes,
+    OutgoingCipherKey, ShieldedOutput,
 };
 
 use crate::{
+    Address, Note,
     action::Action,
     keys::{
         DiversifiedTransmissionKey, Diversifier, EphemeralPublicKey, EphemeralSecretKey,
@@ -19,7 +20,6 @@ use crate::{
     },
     note::{ExtractedNoteCommitment, NoteVersion, Nullifier, RandomSeed, Rho},
     value::{NoteValue, ValueCommitment},
-    Address, Note,
 };
 
 const PRF_OCK_ORCHARD_PERSONALIZATION: &[u8; 16] = b"Zcash_Orchardock";
@@ -530,10 +530,10 @@ pub mod testing {
     use zcash_note_encryption::Domain;
 
     use crate::{
+        Address, Note,
         keys::OutgoingViewingKey,
         note::{ExtractedNoteCommitment, NoteVersion, Nullifier, RandomSeed, Rho},
         value::NoteValue,
-        Address, Note,
     };
 
     use super::{CompactAction, OrchardDomain, OrchardNoteEncryption};
@@ -583,16 +583,17 @@ mod tests {
 
     use crate::rng_compat::{OsRng, RngCore06};
     use zcash_note_encryption::{
-        batch, try_compact_note_decryption, try_note_decryption, try_output_recovery_with_ovk,
-        BatchDomain, Domain, EphemeralKeyBytes, NoteEncryption,
+        BatchDomain, Domain, EphemeralKeyBytes, NoteEncryption, batch, try_compact_note_decryption,
+        try_note_decryption, try_output_recovery_with_ovk,
     };
 
     use super::{
-        prf_ock_orchard, CompactAction, DomainVersion, IronwoodDomain, IronwoodNoteEncryption,
-        IronwoodVersion, NoteEncryptionDomain, OrchardDomain, OrchardNoteEncryption,
-        OrchardVersion,
+        CompactAction, DomainVersion, IronwoodDomain, IronwoodNoteEncryption, IronwoodVersion,
+        NoteEncryptionDomain, OrchardDomain, OrchardNoteEncryption, OrchardVersion,
+        prf_ock_orchard,
     };
     use crate::{
+        Address, Note,
         action::Action,
         keys::{
             DiversifiedTransmissionKey, Diversifier, EphemeralSecretKey, FullViewingKey,
@@ -604,7 +605,6 @@ mod tests {
         },
         primitives::redpallas,
         value::{NoteValue, ValueCommitTrapdoor, ValueCommitment, ValueSum},
-        Address, Note,
     };
 
     fn v3_encrypted_action() -> (
@@ -808,12 +808,16 @@ mod tests {
                 .map(|(note, _)| note),
             Some(note_v3)
         );
-        assert!(orchard_domain
-            .parse_note_plaintext_without_memo_ovk(pk_d, &np_v3)
-            .is_none());
-        assert!(ironwood_domain
-            .parse_note_plaintext_without_memo_ovk(pk_d, &np_v2)
-            .is_none());
+        assert!(
+            orchard_domain
+                .parse_note_plaintext_without_memo_ovk(pk_d, &np_v3)
+                .is_none()
+        );
+        assert!(
+            ironwood_domain
+                .parse_note_plaintext_without_memo_ovk(pk_d, &np_v2)
+                .is_none()
+        );
     }
 
     #[test]

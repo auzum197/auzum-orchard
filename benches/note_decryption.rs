@@ -1,12 +1,12 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use orchard::{
+    Anchor, Bundle,
     builder::{Builder, BundleType},
     bundle::BundleVersion,
     circuit::{OrchardCircuitVersion, ProvingKey},
     keys::{FullViewingKey, PreparedIncomingViewingKey, Scope, SpendingKey},
     note_encryption::{CompactAction, OrchardDomain},
     value::NoteValue,
-    Anchor, Bundle,
 };
 use rand::rng;
 use zcash_note_encryption::{batch, try_compact_note_decryption, try_note_decryption};

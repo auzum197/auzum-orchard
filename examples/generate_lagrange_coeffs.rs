@@ -1,10 +1,10 @@
 use std::{fmt::Write, path::PathBuf};
 
 use ff::PrimeField;
-use halo2_gadgets::ecc::chip::{constants::compute_lagrange_coeffs, FixedPoint, FixedScalarKind};
+use halo2_gadgets::ecc::chip::{FixedPoint, FixedScalarKind, constants::compute_lagrange_coeffs};
 use orchard::constants::{
-    fixed_bases::{NUM_WINDOWS, NUM_WINDOWS_SHORT},
     OrchardBaseFieldBases, OrchardFixedBasesFull, OrchardShortScalarBases,
+    fixed_bases::{NUM_WINDOWS, NUM_WINDOWS_SHORT},
 };
 use pasta_curves::pallas;
 

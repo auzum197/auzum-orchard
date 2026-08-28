@@ -1,15 +1,15 @@
 use std::time::Duration;
 
-use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion, SamplingMode};
+use criterion::{BatchSize, Criterion, SamplingMode, black_box, criterion_group, criterion_main};
 use orchard::{
+    Anchor, Bundle,
     builder::{Builder, BundleType},
     bundle::{BundleVersion, Flags},
     circuit::{OrchardCircuitVersion, ProvingKey, VerifyingKey},
     keys::{FullViewingKey, Scope, SpendingKey},
     value::NoteValue,
-    Anchor, Bundle,
 };
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{SeedableRng, rngs::StdRng};
 
 const BENCHMARK_ACTION_COUNTS: [usize; 3] = [1, 2, 4];
 const FIXTURE_ADDRESS_INDEX: u32 = 0;
