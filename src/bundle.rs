@@ -19,6 +19,7 @@ use zcash_note_encryption::{try_note_decryption, try_output_recovery_with_ovk};
 use memuse::DynamicUsage;
 
 use crate::{
+    Proof, ProtocolVersion, ValuePool,
     action::Action,
     address::Address,
     bundle::commitments::{hash_bundle_auth_data, hash_bundle_txid_data},
@@ -28,7 +29,6 @@ use crate::{
     primitives::redpallas::{self, Binding, SpendAuth},
     tree::Anchor,
     value::{ValueCommitTrapdoor, ValueCommitment, ValueSum},
-    Proof, ProtocolVersion, ValuePool,
 };
 
 #[cfg(feature = "circuit")]
@@ -1013,12 +1013,12 @@ impl<V: DynamicUsage> DynamicUsage for Bundle<Authorized, V> {
             self.authorization.proof.dynamic_usage_bounds(),
         );
         (
-            bounds.0 .0 + bounds.1 .0 + bounds.2 .0,
+            bounds.0.0 + bounds.1.0 + bounds.2.0,
             bounds
                 .0
-                 .1
-                .zip(bounds.1 .1)
-                .zip(bounds.2 .1)
+                .1
+                .zip(bounds.1.1)
+                .zip(bounds.2.1)
                 .map(|((a, b), c)| a + b + c),
         )
     }
@@ -1051,17 +1051,17 @@ pub mod testing {
     use group::ff::FromUniformBytes;
     use nonempty::NonEmpty;
     use pasta_curves::pallas;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
     use reddsa::orchard::SpendAuth;
 
     use proptest::collection::vec;
     use proptest::prelude::*;
 
     use crate::{
+        Anchor, NoteVersion, Proof,
         bundle::BundleVersion,
         primitives::redpallas::{self, testing::arb_binding_signing_key},
-        value::{testing::arb_note_value_bounded, NoteValue, ValueSum, MAX_NOTE_VALUE},
-        Anchor, NoteVersion, Proof,
+        value::{MAX_NOTE_VALUE, NoteValue, ValueSum, testing::arb_note_value_bounded},
     };
 
     use super::{Action, Authorized, Bundle, Flags};
@@ -1425,8 +1425,8 @@ pub(crate) mod tests {
 
     #[test]
     fn empty_commitments_are_domain_separated() {
-        use crate::bundle::commitments::{hash_bundle_auth_empty, hash_bundle_txid_empty};
         use crate::ValuePool;
+        use crate::bundle::commitments::{hash_bundle_auth_empty, hash_bundle_txid_empty};
 
         // The three commitment formats — Orchard v5, Orchard v6, Ironwood v6 — use distinct
         // personalizations, so the absent-bundle digests are all different from one another.

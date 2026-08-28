@@ -4,12 +4,12 @@ use alloc::vec::Vec;
 
 use group::{Curve, GroupEncoding};
 use halo2_proofs::{
-    circuit::{floor_planner, Layouter, Value},
+    circuit::{Layouter, Value, floor_planner},
     plonk::{
         self, Advice, BatchVerifier, Column, Constraints, Expression, Fixed,
         Instance as InstanceColumn, Selector, SingleVerifier,
     },
-    poly::{commitment::Params, Rotation},
+    poly::{Rotation, commitment::Params},
     transcript::{Blake2bRead, Blake2bWrite},
 };
 use pasta_curves::{arithmetic::CurveAffine, pallas, vesta};
@@ -27,16 +27,16 @@ use crate::{
     builder::SpendInfo,
     bundle::Flags,
     constants::{
-        OrchardCommitDomains, OrchardFixedBases, OrchardFixedBasesFull, OrchardHashDomains,
-        MERKLE_DEPTH_ORCHARD,
+        MERKLE_DEPTH_ORCHARD, OrchardCommitDomains, OrchardFixedBases, OrchardFixedBasesFull,
+        OrchardHashDomains,
     },
     keys::{
         CommitIvkRandomness, DiversifiedTransmissionKey, NullifierDerivingKey, SpendValidatingKey,
     },
     note::{
+        ExtractedNoteCommitment, Note, Rho,
         commitment::{NoteCommitTrapdoor, NoteCommitment},
         nullifier::Nullifier,
-        ExtractedNoteCommitment, Note, Rho,
     },
     primitives::redpallas::{SpendAuth, VerificationKey},
     spec::NonIdentityPallasPoint,
@@ -45,16 +45,16 @@ use crate::{
 };
 use halo2_gadgets::{
     ecc::{
-        chip::{EccChip, EccConfig},
         CircuitVersion, FixedPoint, NonIdentityPoint, Point, ScalarFixed, ScalarFixedShort,
         ScalarVar,
+        chip::{EccChip, EccConfig},
     },
-    poseidon::{primitives as poseidon, Pow5Chip as PoseidonChip, Pow5Config as PoseidonConfig},
+    poseidon::{Pow5Chip as PoseidonChip, Pow5Config as PoseidonConfig, primitives as poseidon},
     sinsemilla::{
         chip::{SinsemillaChip, SinsemillaConfig},
         merkle::{
-            chip::{MerkleChip, MerkleConfig},
             MerklePath,
+            chip::{MerkleChip, MerkleConfig},
         },
     },
     utilities::lookup_range_check::{LookupRangeCheck, LookupRangeCheckConfig},
@@ -1494,8 +1494,8 @@ mod tests {
     use crate::rng_compat::OsRng;
 
     use super::{
-        orchard_k11_params, Circuit, Instance, OrchardCircuitVersion, Proof, VerifyingKey, K,
-        ORCHARD_K11_PARAMS,
+        Circuit, Instance, K, ORCHARD_K11_PARAMS, OrchardCircuitVersion, Proof, VerifyingKey,
+        orchard_k11_params,
     };
     use crate::{
         bundle::{BundleVersion, Flags},
@@ -1821,14 +1821,16 @@ mod tests {
 
         let strategy = super::SingleVerifier::new(&vk.params);
         let mut transcript = Blake2bRead::init(&proof_bytes[..]);
-        assert!(super::plonk::verify_proof(
-            &vk.params,
-            &vk.vk,
-            strategy,
-            &raw_instances,
-            &mut transcript,
-        )
-        .is_ok());
+        assert!(
+            super::plonk::verify_proof(
+                &vk.params,
+                &vk.vk,
+                strategy,
+                &raw_instances,
+                &mut transcript,
+            )
+            .is_ok()
+        );
 
         assert!(matches!(
             Proof::create(

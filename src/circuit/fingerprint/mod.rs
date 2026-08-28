@@ -29,14 +29,14 @@
 
 use alloc::vec::Vec;
 
-use halo2_proofs::plonk::fingerprint::{capture_proof_fingerprint, ChallengeRecorder};
+use halo2_proofs::plonk::fingerprint::{ChallengeRecorder, capture_proof_fingerprint};
 use halo2_proofs::transcript::Challenge255;
 use incrementalmerkletree::Hashable;
 use pasta_curves::vesta;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 
-use super::{OrchardCircuitVersion, ProvingKey, VerifyingKey, K};
+use super::{K, OrchardCircuitVersion, ProvingKey, VerifyingKey};
 use crate::{
     builder::{Builder, BundleType},
     bundle::BundleVersion,

@@ -11,13 +11,13 @@ use zcash_note_encryption::OutgoingCipherKey;
 use zip32::ChildIndex;
 
 use crate::{
+    Address, Anchor, NoteVersion, Proof,
     bundle::{BundleVersion, Flags},
     keys::{FullViewingKey, SpendingKey},
     note::{ExtractedNoteCommitment, Nullifier, RandomSeed, Rho, TransmittedNoteCiphertext},
     primitives::redpallas::{self, Binding, SpendAuth},
     tree::MerklePath,
     value::{NoteValue, ValueCommitTrapdoor, ValueCommitment, ValueSum},
-    Address, Anchor, NoteVersion, Proof,
 };
 
 mod parse;
@@ -388,9 +388,10 @@ mod tests {
     use ff::{Field, PrimeField};
     use incrementalmerkletree::{Marking, Retention};
     use pasta_curves::pallas;
-    use shardtree::{store::memory::MemoryShardStore, ShardTree};
+    use shardtree::{ShardTree, store::memory::MemoryShardStore};
 
     use crate::{
+        Note,
         builder::{Builder, BundleMetadata, BundleType},
         bundle::{BundleVersion, Flags},
         circuit::OrchardCircuitVersion,
@@ -402,9 +403,8 @@ mod tests {
             Zip32Derivation,
         },
         primitives::redpallas::{self, SpendAuth},
-        tree::{empty_roots, MerkleHashOrchard, MerklePath},
+        tree::{MerkleHashOrchard, MerklePath, empty_roots},
         value::NoteValue,
-        Note,
     };
 
     /// Builds a cross-address-restricted pczt bundle with one real spend (15_000 at an
@@ -857,7 +857,7 @@ mod tests {
     #[test]
     fn preverified_parse_signs_identically_to_full_parse() {
         use super::{Action, Spend};
-        use rand::{rngs::StdRng, SeedableRng};
+        use rand::{SeedableRng, rngs::StdRng};
 
         let bundle_version = BundleVersion::orchard_v2();
         let mut rng = OsRng;
@@ -1436,10 +1436,12 @@ mod tests {
 
         let spend_action_index = bundle_meta.spend_action_index(0).unwrap();
         let padding_action_index = 1 - spend_action_index;
-        assert!(pczt_bundle.actions()[padding_action_index]
-            .spend
-            .dummy_sk
-            .is_some());
+        assert!(
+            pczt_bundle.actions()[padding_action_index]
+                .spend
+                .dummy_sk
+                .is_some()
+        );
 
         let sighash = [0; 32];
         pczt_bundle.finalize_io(sighash, rng).unwrap();
@@ -1449,10 +1451,12 @@ mod tests {
         let padding_action = &pczt_bundle.actions()[padding_action_index];
         assert!(padding_action.spend.dummy_sk.is_none());
         assert!(padding_action.spend.spend_auth_sig.is_some());
-        assert!(pczt_bundle.actions()[spend_action_index]
-            .spend
-            .spend_auth_sig
-            .is_none());
+        assert!(
+            pczt_bundle.actions()[spend_action_index]
+                .spend
+                .spend_auth_sig
+                .is_none()
+        );
 
         pczt_bundle.actions_mut()[spend_action_index]
             .sign(sighash, &SpendAuthorizingKey::from(&spend_sk), rng)
