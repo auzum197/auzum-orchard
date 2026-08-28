@@ -80,5 +80,5 @@ than continuing the upstream `0.15.5` numbering.
 - Sped up batched trial decryption of Orchard notes through the
   `zcash_note_encryption` batch interfaces.
 - Sped up note commitment computation and Merkle tree hashing.
-- Raised the minimum supported Rust version to 1.88 and migrated the crate to
+- Raised the minimum supported Rust version to 1.91 and migrated the crate to
   the 2024 edition.
