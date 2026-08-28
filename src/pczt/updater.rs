@@ -4,7 +4,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::{Action, Bundle, Zip32Derivation};
-use crate::{tree::MerklePath, Anchor};
+use crate::{Anchor, tree::MerklePath};
 
 impl Bundle {
     /// Updates the bundle with information provided in the given closure.

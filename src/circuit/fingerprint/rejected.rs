@@ -4,9 +4,9 @@ use alloc::vec::Vec;
 
 use ff::Field;
 use halo2_proofs::plonk::fingerprint::{
-    capture_proof_fingerprint, ChallengeRecorder, TranscriptEvent,
+    ChallengeRecorder, TranscriptEvent, capture_proof_fingerprint,
 };
-use halo2_proofs::plonk::{verify_proof, SingleVerifier};
+use halo2_proofs::plonk::{SingleVerifier, verify_proof};
 use halo2_proofs::transcript::{Blake2bWrite, Challenge255, TranscriptWrite};
 use pasta_curves::vesta;
 
@@ -212,14 +212,16 @@ fn fingerprint_rejected_capture_two_actions() {
     let strategy = SingleVerifier::new(&vk.params);
     let mut missing_permutation_last_eval_transcript =
         ChallengeRecorder::<_, _, Challenge255<_>>::init(&missing_permutation_last_eval_proof[..]);
-    assert!(verify_proof(
-        &vk.params,
-        &vk.vk,
-        strategy,
-        &raw_instance_refs,
-        &mut missing_permutation_last_eval_transcript,
-    )
-    .is_err());
+    assert!(
+        verify_proof(
+            &vk.params,
+            &vk.vk,
+            strategy,
+            &raw_instance_refs,
+            &mut missing_permutation_last_eval_transcript,
+        )
+        .is_err()
+    );
 
     std::eprintln!(
         "Orchard negative captures: tampered advice eval events={} challenges={} scalars={} points={}; truncated-u events={} challenges={} scalars={} points={}; missing permutation last-eval events={} challenges={} scalars={} points={}",

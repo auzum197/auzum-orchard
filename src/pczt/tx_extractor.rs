@@ -5,9 +5,9 @@ use rand::{CryptoRng, Rng};
 
 use super::Action;
 use crate::{
+    Proof,
     bundle::{Authorization, Authorized, EffectsOnly},
     primitives::redpallas::{self, Binding, SpendAuth},
-    Proof,
 };
 
 impl super::Bundle {
@@ -98,25 +98,26 @@ impl super::Bundle {
             })
             .collect::<Result<_, E>>()?;
 
-        Ok(match NonEmpty::from_vec(actions) { Some(actions) => {
-            let value_balance = i64::try_from(self.value_sum)
-                .ok()
-                .and_then(|v| v.try_into().ok())
-                .ok_or(TxExtractorError::ValueSumOutOfRange)?;
+        Ok(match NonEmpty::from_vec(actions) {
+            Some(actions) => {
+                let value_balance = i64::try_from(self.value_sum)
+                    .ok()
+                    .and_then(|v| v.try_into().ok())
+                    .ok_or(TxExtractorError::ValueSumOutOfRange)?;
 
-            let authorization = bundle_auth(self)?;
+                let authorization = bundle_auth(self)?;
 
-            Some(crate::Bundle::from_parts_unchecked(
-                actions,
-                self.flags,
-                value_balance,
-                self.anchor,
-                authorization,
-                self.bundle_version,
-            ))
-        } _ => {
-            None
-        }})
+                Some(crate::Bundle::from_parts_unchecked(
+                    actions,
+                    self.flags,
+                    value_balance,
+                    self.anchor,
+                    authorization,
+                    self.bundle_version,
+                ))
+            }
+            _ => None,
+        })
     }
 }
 

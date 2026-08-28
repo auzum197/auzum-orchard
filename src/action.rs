@@ -187,22 +187,22 @@ impl DynamicUsage for Action<redpallas::Signature<SpendAuth>> {
 #[cfg(any(test, feature = "test-dependencies"))]
 #[cfg_attr(docsrs, doc(cfg(feature = "test-dependencies")))]
 pub(crate) mod testing {
-    use rand::{rngs::StdRng, Rng, SeedableRng};
+    use rand::{Rng, SeedableRng, rngs::StdRng};
     use reddsa::orchard::SpendAuth;
     use zcash_note_encryption::Domain as _;
 
     use proptest::prelude::*;
 
     use crate::{
+        Note, NoteVersion,
         note::{
-            commitment::ExtractedNoteCommitment, nullifier::testing::arb_nullifier,
-            testing::arb_note, TransmittedNoteCiphertext,
+            TransmittedNoteCiphertext, commitment::ExtractedNoteCommitment,
+            nullifier::testing::arb_nullifier, testing::arb_note,
         },
         note_encryption::{OrchardDomain, OrchardNoteEncryption},
         primitives::redpallas::{self, testing::arb_valid_spendauth_keypair},
         rng_compat::RngCore06,
         value::{NoteValue, ValueCommitTrapdoor, ValueCommitment},
-        Note, NoteVersion,
     };
 
     use super::Action;

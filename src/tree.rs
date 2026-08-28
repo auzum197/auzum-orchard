@@ -7,8 +7,8 @@ use core::iter;
 use crate::constants::sinsemilla::K;
 use crate::{
     constants::{
-        sinsemilla::{i2lebsp_k, L_ORCHARD_MERKLE, MERKLE_CRH_PERSONALIZATION},
         MERKLE_DEPTH_ORCHARD,
+        sinsemilla::{L_ORCHARD_MERKLE, MERKLE_CRH_PERSONALIZATION, i2lebsp_k},
     },
     note::commitment::ExtractedNoteCommitment,
 };
@@ -18,9 +18,9 @@ use crate::spec::extract_p_bottom_batch;
 
 use incrementalmerkletree::{Hashable, Level};
 use pasta_curves::pallas;
+use sinsemilla::HashDomain;
 #[cfg(feature = "weighted-merkle")]
 use sinsemilla::weighted::{BatchHashWorkspace, UncheckedFixedLengthHashDomain};
-use sinsemilla::HashDomain;
 
 use crate::once::OnceTable;
 use ff::{Field, PrimeField, PrimeFieldBits};
@@ -459,8 +459,8 @@ pub mod testing {
     use ff::{Field, FromUniformBytes};
     use proptest::{arbitrary::any, strategy::Strategy};
     use rand::{
-        distr::{Distribution, StandardUniform},
         Rng,
+        distr::{Distribution, StandardUniform},
     };
 
     use super::MerkleHashOrchard;
@@ -498,19 +498,19 @@ mod tests {
 
     use {
         crate::{
-            constants::{sinsemilla::MERKLE_CRH_PERSONALIZATION, MERKLE_DEPTH_ORCHARD},
-            tree::{empty_roots, merkle_crh_message, testing::arb_merkle_hash, MerkleHashOrchard},
+            constants::{MERKLE_DEPTH_ORCHARD, sinsemilla::MERKLE_CRH_PERSONALIZATION},
+            tree::{MerkleHashOrchard, empty_roots, merkle_crh_message, testing::arb_merkle_hash},
         },
         alloc::vec::Vec,
         group::ff::{Field, PrimeField},
         incrementalmerkletree::{
-            frontier::Frontier, Hashable, Level, Marking, MerklePath, Retention,
+            Hashable, Level, Marking, MerklePath, Retention, frontier::Frontier,
         },
         pasta_curves::pallas,
         proptest::prelude::*,
         rand::SeedableRng,
         rand_chacha::ChaCha20Rng,
-        shardtree::{store::memory::MemoryShardStore, ShardTree},
+        shardtree::{ShardTree, store::memory::MemoryShardStore},
         sinsemilla::HashDomain,
     };
 
@@ -594,7 +594,7 @@ mod tests {
         use incrementalmerkletree::{Hashable, Level};
         use pasta_curves::pallas;
 
-        use crate::constants::{sinsemilla::K, MERKLE_DEPTH_ORCHARD};
+        use crate::constants::{MERKLE_DEPTH_ORCHARD, sinsemilla::K};
 
         /// `2^bit` as raw limbs (for `bit < 256`).
         fn bit_limbs(bit: usize) -> [u64; 4] {
