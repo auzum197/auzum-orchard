@@ -399,7 +399,7 @@ fn merkle_crh_message(
     level: Level,
     left: &MerkleHashOrchard,
     right: &MerkleHashOrchard,
-) -> impl Iterator<Item = bool> {
+) -> impl Iterator<Item = bool> + use<> {
     i2lebsp_k(usize::from(level))
         .into_iter()
         .chain(left.0.to_le_bits().into_iter().take(L_ORCHARD_MERKLE))
