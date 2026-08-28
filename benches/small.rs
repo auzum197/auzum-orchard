@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
 use incrementalmerkletree::{Hashable, Level};
 use orchard::keys::{FullViewingKey, Scope, SpendingKey};
 use orchard::tree::MerkleHashOrchard;
