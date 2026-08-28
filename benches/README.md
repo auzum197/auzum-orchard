@@ -10,7 +10,7 @@ The Merkle harness measures one parent hash and construction of complete
 subtrees, scalar and batched:
 
 ```console
-cargo +1.88 bench --locked -p zakura-orchard --bench merkle
+cargo +1.91 bench --locked -p zakura-orchard --bench merkle
 ```
 
 - `1024-leaves[-batch]`: one fixed vector of seeded pseudorandom leaves,
@@ -28,7 +28,7 @@ In both cases leaf generation happens outside the timed routines.
 Build or run the Criterion target with one Rayon worker:
 
 ```console
-RAYON_NUM_THREADS=1 cargo +1.88 bench --locked \
+RAYON_NUM_THREADS=1 cargo +1.91 bench --locked \
     -p zakura-orchard --features circuit \
     --bench orchard_k11_prover
 ```
@@ -41,7 +41,7 @@ For a multicore run, set both thread-count variables to the same value:
 
 ```console
 RAYON_NUM_THREADS=10 ORCHARD_K11_PROVER_THREADS=10 \
-    cargo +1.88 bench --locked \
+    cargo +1.91 bench --locked \
     -p zakura-orchard --features circuit \
     --bench orchard_k11_prover
 ```
@@ -52,7 +52,7 @@ The proving-key benchmark uses the same Orchard circuit and Criterion timing
 configuration:
 
 ```console
-RAYON_NUM_THREADS=10 cargo +1.88 bench --locked \
+RAYON_NUM_THREADS=10 cargo +1.91 bench --locked \
     -p zakura-orchard --features circuit \
     --bench orchard_k11_keygen
 ```
@@ -66,7 +66,7 @@ per-sample configuration cloning are outside the timed regions. It measures
 one-, two-, and four-Action synthesis with 50 warmups and 1,000 samples:
 
 ```console
-RAYON_NUM_THREADS=10 cargo +1.88 test --locked --release \
+RAYON_NUM_THREADS=10 cargo +1.91 test --locked --release \
     -p zakura-orchard --features circuit --lib \
     circuit::benchmark::benchmark_witness_assignment \
     -- --ignored --exact --nocapture
@@ -84,7 +84,7 @@ to Orchard's internal Halo 2 instance representation. Build the test binary
 without running it:
 
 ```console
-cargo +1.88 test --locked --release \
+cargo +1.91 test --locked --release \
     -p zakura-orchard --features circuit --lib --no-run
 ```
 
