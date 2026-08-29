@@ -18,7 +18,7 @@ conditions.
 
 ==============================================================================
 
-This library is a fork of the upstream "orchard" crate. Upstream copyright
+This library began as a fork of the "orchard" crate. The original copyright
 notices are preserved below:
 
   Copyright (c) 2020-2025 The Electric Coin Company

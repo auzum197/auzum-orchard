@@ -8,19 +8,9 @@ and this crate adheres to Rust's notion of
 the crate's public API and observable behavior from a consumer's perspective;
 internal implementation details are not tracked here.
 
-## About this fork
-
-`zakura-orchard` is Zakura's fork of the upstream `orchard` crate. This changelog
-begins at the fork point: upstream history up to the fork is documented in the
-upstream repository, and the fork's version lineage restarts at `1.0.0` rather
-than continuing the upstream `0.15.5` numbering.
-
-- Forked from: `orchard 0.15.5`, published from
-  [zcash/orchard](https://github.com/zcash/orchard) at commit
-  [`29d1d55d`](https://github.com/zcash/orchard/commit/29d1d55db62153dcaeef8ef631c8991c53ed1248).
-- Imported into this repository in commit `16d18d2a43d0aecdfcf9e9d02469c16ebf20e50b`.
-
 ## [Unreleased]
+
+## [1.0.0] - 2026-08-28
 
 ### Added
 
@@ -54,24 +44,22 @@ than continuing the upstream `0.15.5` numbering.
 ### Changed
 
 - Renamed the package from `orchard` to `zakura-orchard`; the library target
-  keeps its upstream name, so existing `use` paths compile unchanged.
+  keeps its original name, so existing `use` paths compile unchanged.
 - Updated `ff` and `group` from 0.13 to 0.14 and `rand`/`rand_core` from 0.8/0.6
   to 0.10; every public function that takes an RNG now bounds it by rand 0.10's
   `Rng` trait (plus `CryptoRng` where already required) in place of the old
   `RngCore`, and `MerkleHashOrchard` sampling now implements `Distribution` for
   rand's `StandardUniform`.
-- Replaced the upstream `halo2_proofs` dependency with the Zakura fork
-  (`zakura-halo2-proofs` 1.0.0), whose types appear in this crate's API.
-- Replaced the upstream `halo2_gadgets` dependency with the Zakura fork
-  (`zakura-halo2-gadgets` 1.0.0), whose types appear in this crate's API.
-- Replaced the upstream `pasta_curves` dependency with the Zakura fork
-  (`zakura-pasta-curves` 1.0.0), whose types appear in this crate's API.
-- Replaced the upstream `reddsa` dependency with the Zakura fork
-  (`zakura-reddsa` 1.0.0), whose types appear in this crate's API.
-- Replaced the upstream `sinsemilla` dependency with the Zakura fork
-  (`zakura-sinsemilla` 1.0.0).
-- Replaced the upstream `halo2_poseidon` dependency with the Zakura fork
-  (`zakura-halo2-poseidon` 1.0.0).
+- Replaced the `halo2_proofs` dependency with `zakura-halo2-proofs` 1.0.0,
+  whose types appear in this crate's API.
+- Replaced the `halo2_gadgets` dependency with `zakura-halo2-gadgets` 1.0.0,
+  whose types appear in this crate's API.
+- Replaced the `pasta_curves` dependency with `zakura-pasta-curves` 1.0.0,
+  whose types appear in this crate's API.
+- Replaced the `reddsa` dependency with `zakura-reddsa` 1.0.0, whose types
+  appear in this crate's API.
+- Replaced the `sinsemilla` dependency with `zakura-sinsemilla` 1.0.0.
+- Replaced the `halo2_poseidon` dependency with `zakura-halo2-poseidon` 1.0.0.
 - Sped up `ProvingKey::build` and `VerifyingKey::build`, which now load
   precomputed parameters and fixed-base tables embedded in the crate instead of
   regenerating them on every call.
@@ -80,3 +68,16 @@ than continuing the upstream `0.15.5` numbering.
 - Sped up note commitment computation and Merkle tree hashing.
 - Raised the minimum supported Rust version to 1.91 and migrated the crate to
   the 2024 edition.
+
+## Record of Fork
+
+`zakura-orchard` began as a fork of the `orchard` crate and has been developed
+independently in this repository since. This changelog starts at the fork
+point: history up to that point is documented in the repository the code was
+forked from, and this crate's version lineage restarted at `1.0.0` rather than
+continuing the original `0.15.5` numbering.
+
+- Forked from: `orchard 0.15.5`, published from
+  [zcash/orchard](https://github.com/zcash/orchard) at commit
+  [`29d1d55d`](https://github.com/zcash/orchard/commit/29d1d55db62153dcaeef8ef631c8991c53ed1248).
+- Imported into this repository in commit `16d18d2a43d0aecdfcf9e9d02469c16ebf20e50b`.
