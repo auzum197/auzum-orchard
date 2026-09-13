@@ -4,7 +4,7 @@
 # (never rebases, never force-pushes):
 #
 #     zcash-upstream/main   zcash/orchard                     (real upstream)
-#     zsa/zsa               zcash-shielded-assets/orchard     (Zcash Shielded Assets)
+#     zsa/zsa1              QED-it/orchard                    (Zcash Shielded Assets)
 #     zakura-orchard        zakura-core/common crates/orchard (perf fork, grafted)
 #
 # Recipes:
@@ -38,7 +38,8 @@ set shell := ["bash", "-uc"]
 # --- integration sources -----------------------------------------------------
 
 upstream_src := "zcash-upstream/main"
-zsa_src      := "zsa/zsa"
+zsa_url      := "https://github.com/QED-it/orchard.git"   # the only ZSA source of truth
+zsa_src      := "zsa/zsa1"
 zakura_src   := "zakura-orchard"
 upstream_mirror := "main-upstream"
 zakura_script   := "scripts/zakura-orchard.sh"
@@ -53,20 +54,21 @@ zakura_rev      := common_pin
 
 # halo2_proofs / halo2_gadgets / poseidon -> zakura-halo2-{proofs,gadgets,poseidon}
 halo2_url := "https://github.com/auzum197/halo2.git"
-halo2_pin := "5d7c144830c57e713d036f2f15bf643e04f73e5d"
+halo2_pin := "edd368d4d0b703e27e3c115f40a02a5b1759c350"
 
 # pasta_curves / sinsemilla / reddsa -> zakura-{pasta-curves,sinsemilla,reddsa}
 common_url := "https://github.com/zakura-core/common.git"
-common_pin := "052100f9b9e0f67d2c6aa0406e780f098b94c2a2"
+common_pin := "66ddff6adf11ee134efef0e3e28ac5f72ea92824"
 
 # -----------------------------------------------------------------------------
 
 default: status
 
-# Fetch every remote we integrate from.
+# Fetch every remote we integrate from. Refuse to fetch ZSA from anywhere but {{zsa_url}}.
 fetch:
     #!/usr/bin/env bash
     set -euo pipefail
+    [ "$(git remote get-url zsa)" = "{{zsa_url}}" ] || { echo "remote zsa must be {{zsa_url}}; run: git remote set-url zsa {{zsa_url}}" >&2; exit 1; }
     git fetch --multiple zcash-upstream zsa zakura origin
 
 # Refresh the mirror branches that `just merge` consumes. Never touches `main`.
