@@ -36,8 +36,8 @@ ff = { version = "0.14", default-features = false }
 fpe = { version = "0.6", features = ["alloc"], default-features = false }
 getset = "0.1"
 group = "0.14"
-halo2_gadgets = { package = "zakura-halo2-gadgets", git = "https://github.com/auzum197/halo2.git", rev = "5d7c144830c57e713d036f2f15bf643e04f73e5d", optional = true, default-features = false }
-halo2_proofs = { package = "zakura-halo2-proofs", git = "https://github.com/auzum197/halo2.git", rev = "5d7c144830c57e713d036f2f15bf643e04f73e5d", features = ["batch", "floor-planner-v1-legacy-pdqsort"], optional = true, default-features = false }
+halo2_gadgets = { package = "zakura-halo2-gadgets", git = "https://github.com/auzum197/halo2.git", rev = "edd368d4d0b703e27e3c115f40a02a5b1759c350", optional = true, default-features = false }
+halo2_proofs = { package = "zakura-halo2-proofs", git = "https://github.com/auzum197/halo2.git", rev = "edd368d4d0b703e27e3c115f40a02a5b1759c350", features = ["batch", "floor-planner-v1-legacy-pdqsort"], optional = true, default-features = false }
 hex = { version = "0.4", features = ["alloc"], default-features = false }
 image = { version = "0.24", optional = true }
 incrementalmerkletree = "0.8.1"
@@ -45,16 +45,16 @@ memuse = { version = "0.2.2", default-features = false }
 maybe-rayon = { version = "0.1.0", default-features = false, optional = true }
 nonempty = { version = "0.11", default-features = false }
 once_cell = { version = "1", features = ["race", "alloc"], default-features = false }
-pasta_curves = { package = "zakura-pasta-curves", git = "https://github.com/zakura-core/common.git", rev = "052100f9b9e0f67d2c6aa0406e780f098b94c2a2", features = ["default", "glv"], default-features = false }
+pasta_curves = { package = "zakura-pasta-curves", git = "https://github.com/zakura-core/common.git", rev = "66ddff6adf11ee134efef0e3e28ac5f72ea92824", features = ["default", "glv"], default-features = false }
 plotters = { version = "0.3.0", optional = true }
-poseidon = { package = "zakura-halo2-poseidon", git = "https://github.com/auzum197/halo2.git", rev = "5d7c144830c57e713d036f2f15bf643e04f73e5d", default-features = false }
+poseidon = { package = "zakura-halo2-poseidon", git = "https://github.com/auzum197/halo2.git", rev = "edd368d4d0b703e27e3c115f40a02a5b1759c350", default-features = false }
 proptest = { version = ">=1.0.0, <1.7.0", optional = true }
 rand = { version = "0.10", default-features = false }
 rand_core = { version = "0.10", default-features = false }
 rand_core_06 = { version = "0.6", default-features = false, package = "rand_core" }
-reddsa = { package = "zakura-reddsa", git = "https://github.com/zakura-core/common.git", rev = "052100f9b9e0f67d2c6aa0406e780f098b94c2a2", default-features = false }
+reddsa = { package = "zakura-reddsa", git = "https://github.com/zakura-core/common.git", rev = "66ddff6adf11ee134efef0e3e28ac5f72ea92824", default-features = false }
 serde = { version = "1.0", features = ["derive"], default-features = false }
-sinsemilla = { package = "zakura-sinsemilla", git = "https://github.com/zakura-core/common.git", rev = "052100f9b9e0f67d2c6aa0406e780f098b94c2a2", default-features = false }
+sinsemilla = { package = "zakura-sinsemilla", git = "https://github.com/zakura-core/common.git", rev = "66ddff6adf11ee134efef0e3e28ac5f72ea92824", default-features = false }
 subtle = { version = "2.6", default-features = false }
 tracing = { version = "0.1", default-features = false }
 visibility = { version = "0.1.1", optional = true }
@@ -64,7 +64,7 @@ zip32 = { version = "0.2.0", default-features = false }
 
 [dev-dependencies]
 criterion = "0.4"
-halo2_gadgets = { package = "zakura-halo2-gadgets", git = "https://github.com/auzum197/halo2.git", rev = "5d7c144830c57e713d036f2f15bf643e04f73e5d", features = ["test-dependencies"], default-features = false }
+halo2_gadgets = { package = "zakura-halo2-gadgets", git = "https://github.com/auzum197/halo2.git", rev = "edd368d4d0b703e27e3c115f40a02a5b1759c350", features = ["test-dependencies"], default-features = false }
 hex = "0.4"
 incrementalmerkletree = { version = "0.8.1", features = ["test-dependencies"] }
 proptest = ">=1.0.0, <1.7.0"
@@ -72,7 +72,7 @@ rand = { version = "0.10", features = ["thread_rng"], default-features = false }
 rand_chacha = "0.10"
 rayon = "1"
 shardtree = "0.6"
-sinsemilla = { package = "zakura-sinsemilla", git = "https://github.com/zakura-core/common.git", rev = "052100f9b9e0f67d2c6aa0406e780f098b94c2a2", features = ["test-dependencies"], default-features = false }
+sinsemilla = { package = "zakura-sinsemilla", git = "https://github.com/zakura-core/common.git", rev = "66ddff6adf11ee134efef0e3e28ac5f72ea92824", features = ["test-dependencies"], default-features = false }
 zcash_note_encryption = { version = "0.4.2", features = ["pre-zip-212"] }
 
 [target."cfg(unix)".dev-dependencies]

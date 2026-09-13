@@ -1564,6 +1564,7 @@ dependencies = [
  "image",
  "incrementalmerkletree",
  "inferno",
+ "maybe-rayon",
  "memuse",
  "nonempty",
  "once_cell",
@@ -2704,8 +2705,8 @@ dependencies = [
 
 [[package]]
 name = "zakura-bls12-381"
-version = "1.0.1"
-source = "git+https://github.com/zakura-core/common.git?rev=052100f9b9e0f67d2c6aa0406e780f098b94c2a2#052100f9b9e0f67d2c6aa0406e780f098b94c2a2"
+version = "1.2.0"
+source = "git+https://github.com/zakura-core/common.git?rev=66ddff6adf11ee134efef0e3e28ac5f72ea92824#66ddff6adf11ee134efef0e3e28ac5f72ea92824"
 dependencies = [
  "ff",
  "rand_core 0.10.1",
@@ -2714,8 +2715,8 @@ dependencies = [
 
 [[package]]
 name = "zakura-halo2-gadgets"
-version = "1.0.1"
-source = "git+https://github.com/auzum197/halo2.git?rev=5d7c144830c57e713d036f2f15bf643e04f73e5d#5d7c144830c57e713d036f2f15bf643e04f73e5d"
+version = "1.2.0"
+source = "git+https://github.com/auzum197/halo2.git?rev=edd368d4d0b703e27e3c115f40a02a5b1759c350#edd368d4d0b703e27e3c115f40a02a5b1759c350"
 dependencies = [
  "arrayvec",
  "ff",
@@ -2730,13 +2731,13 @@ dependencies = [
 
 [[package]]
 name = "zakura-halo2-legacy-pdqsort"
-version = "1.0.1"
-source = "git+https://github.com/zakura-core/common.git?rev=052100f9b9e0f67d2c6aa0406e780f098b94c2a2#052100f9b9e0f67d2c6aa0406e780f098b94c2a2"
+version = "1.2.0"
+source = "git+https://github.com/zakura-core/common.git?rev=66ddff6adf11ee134efef0e3e28ac5f72ea92824#66ddff6adf11ee134efef0e3e28ac5f72ea92824"
 
 [[package]]
 name = "zakura-halo2-poseidon"
-version = "1.0.1"
-source = "git+https://github.com/auzum197/halo2.git?rev=5d7c144830c57e713d036f2f15bf643e04f73e5d#5d7c144830c57e713d036f2f15bf643e04f73e5d"
+version = "1.2.0"
+source = "git+https://github.com/auzum197/halo2.git?rev=edd368d4d0b703e27e3c115f40a02a5b1759c350#edd368d4d0b703e27e3c115f40a02a5b1759c350"
 dependencies = [
  "bitvec",
  "ff",
@@ -2746,8 +2747,8 @@ dependencies = [
 
 [[package]]
 name = "zakura-halo2-proofs"
-version = "1.0.1"
-source = "git+https://github.com/auzum197/halo2.git?rev=5d7c144830c57e713d036f2f15bf643e04f73e5d#5d7c144830c57e713d036f2f15bf643e04f73e5d"
+version = "1.2.0"
+source = "git+https://github.com/auzum197/halo2.git?rev=edd368d4d0b703e27e3c115f40a02a5b1759c350#edd368d4d0b703e27e3c115f40a02a5b1759c350"
 dependencies = [
  "blake2b_simd",
  "ff",
@@ -2764,8 +2765,8 @@ dependencies = [
 
 [[package]]
 name = "zakura-jubjub"
-version = "1.0.1"
-source = "git+https://github.com/zakura-core/common.git?rev=052100f9b9e0f67d2c6aa0406e780f098b94c2a2#052100f9b9e0f67d2c6aa0406e780f098b94c2a2"
+version = "1.2.0"
+source = "git+https://github.com/zakura-core/common.git?rev=66ddff6adf11ee134efef0e3e28ac5f72ea92824#66ddff6adf11ee134efef0e3e28ac5f72ea92824"
 dependencies = [
  "bitvec",
  "ff",
@@ -2777,8 +2778,8 @@ dependencies = [
 
 [[package]]
 name = "zakura-pasta-curves"
-version = "1.0.1"
-source = "git+https://github.com/zakura-core/common.git?rev=052100f9b9e0f67d2c6aa0406e780f098b94c2a2#052100f9b9e0f67d2c6aa0406e780f098b94c2a2"
+version = "1.2.0"
+source = "git+https://github.com/zakura-core/common.git?rev=66ddff6adf11ee134efef0e3e28ac5f72ea92824#66ddff6adf11ee134efef0e3e28ac5f72ea92824"
 dependencies = [
  "blake2b_simd",
  "cc",
@@ -2793,8 +2794,8 @@ dependencies = [
 
 [[package]]
 name = "zakura-reddsa"
-version = "1.0.1"
-source = "git+https://github.com/zakura-core/common.git?rev=052100f9b9e0f67d2c6aa0406e780f098b94c2a2#052100f9b9e0f67d2c6aa0406e780f098b94c2a2"
+version = "1.2.0"
+source = "git+https://github.com/zakura-core/common.git?rev=66ddff6adf11ee134efef0e3e28ac5f72ea92824#66ddff6adf11ee134efef0e3e28ac5f72ea92824"
 dependencies = [
  "blake2b_simd",
  "frost-rerandomized",
@@ -2810,8 +2811,8 @@ dependencies = [
 
 [[package]]
 name = "zakura-sinsemilla"
-version = "1.0.1"
-source = "git+https://github.com/zakura-core/common.git?rev=052100f9b9e0f67d2c6aa0406e780f098b94c2a2#052100f9b9e0f67d2c6aa0406e780f098b94c2a2"
+version = "1.2.0"
+source = "git+https://github.com/zakura-core/common.git?rev=66ddff6adf11ee134efef0e3e28ac5f72ea92824#66ddff6adf11ee134efef0e3e28ac5f72ea92824"
 dependencies = [
  "group",
  "once_cell",
