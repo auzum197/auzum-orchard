@@ -6,12 +6,13 @@ use core::fmt;
 use blake2b_simd::{Hash, Params};
 use group::ff::PrimeField;
 use zcash_note_encryption::{
-    BatchDomain, Domain, EphemeralKeyBytes, NotePlaintextBytes, OutPlaintextBytes,
-    OutgoingCipherKey, ShieldedOutput, COMPACT_NOTE_SIZE, ENC_CIPHERTEXT_SIZE, NOTE_PLAINTEXT_SIZE,
-    OUT_PLAINTEXT_SIZE,
+    BatchDomain, COMPACT_NOTE_SIZE, Domain, ENC_CIPHERTEXT_SIZE, EphemeralKeyBytes,
+    NOTE_PLAINTEXT_SIZE, NotePlaintextBytes, OUT_PLAINTEXT_SIZE, OutPlaintextBytes,
+    OutgoingCipherKey, ShieldedOutput,
 };
 
 use crate::{
+    Address, Note,
     action::Action,
     keys::{
         DiversifiedTransmissionKey, Diversifier, EphemeralPublicKey, EphemeralSecretKey,
@@ -19,7 +20,6 @@ use crate::{
     },
     note::{ExtractedNoteCommitment, NoteVersion, Nullifier, RandomSeed, Rho},
     value::{NoteValue, ValueCommitment},
-    Address, Note,
 };
 
 const PRF_OCK_ORCHARD_PERSONALIZATION: &[u8; 16] = b"Zcash_Orchardock";
@@ -373,13 +373,13 @@ impl<P: DomainPolicy> BatchDomain for NoteEncryptionDomain<P> {
     where
         Self::PreparedEphemeralPublicKey: 'a,
     {
-        // One GLV decomposition and digit recoding of the viewing key for the
-        // whole batch; each ephemeral key's window is then consumed by a
-        // shared-doubling ladder.
+        // One GLV decomposition and digit recoding of the viewing key for
+        // the whole batch, then one synchronized ladder over every prepared
+        // ephemeral key (see `PreparedEphemeralPublicKey::batch_agree`).
         let decomposed =
             pasta_curves::glv::Decomposed::<pasta_curves::pallas::Point>::new(&ivk.raw_scalar());
-        epks.map(|epk| epk.map(|epk| epk.agree_with(ivk, &decomposed)))
-            .collect()
+        let epks: Vec<_> = epks.collect();
+        PreparedEphemeralPublicKey::batch_agree(ivk, &decomposed, &epks)
     }
 }
 
@@ -526,14 +526,14 @@ impl CompactAction {
 /// Utilities for constructing test data.
 #[cfg(feature = "test-dependencies")]
 pub mod testing {
-    use rand::RngCore;
+    use rand::Rng;
     use zcash_note_encryption::Domain;
 
     use crate::{
+        Address, Note,
         keys::OutgoingViewingKey,
         note::{ExtractedNoteCommitment, NoteVersion, Nullifier, RandomSeed, Rho},
         value::NoteValue,
-        Address, Note,
     };
 
     use super::{CompactAction, OrchardDomain, OrchardNoteEncryption};
@@ -541,7 +541,7 @@ pub mod testing {
     /// Creates a fake `CompactAction` paying the given recipient the specified value.
     ///
     /// Returns the `CompactAction` and the new note.
-    pub fn fake_compact_action<R: RngCore>(
+    pub fn fake_compact_action<R: Rng>(
         rng: &mut R,
         nf_old: Nullifier,
         recipient: Address,
@@ -581,18 +581,19 @@ pub mod testing {
 mod tests {
     use alloc::vec::Vec;
 
-    use rand::rngs::OsRng;
+    use crate::rng_compat::{OsRng, RngCore06};
     use zcash_note_encryption::{
-        batch, try_compact_note_decryption, try_note_decryption, try_output_recovery_with_ovk,
-        BatchDomain, Domain, EphemeralKeyBytes, NoteEncryption,
+        BatchDomain, Domain, EphemeralKeyBytes, NoteEncryption, batch, try_compact_note_decryption,
+        try_note_decryption, try_output_recovery_with_ovk,
     };
 
     use super::{
-        prf_ock_orchard, CompactAction, DomainVersion, IronwoodDomain, IronwoodNoteEncryption,
-        IronwoodVersion, NoteEncryptionDomain, OrchardDomain, OrchardNoteEncryption,
-        OrchardVersion,
+        CompactAction, DomainVersion, IronwoodDomain, IronwoodNoteEncryption, IronwoodVersion,
+        NoteEncryptionDomain, OrchardDomain, OrchardNoteEncryption, OrchardVersion,
+        prf_ock_orchard,
     };
     use crate::{
+        Address, Note,
         action::Action,
         keys::{
             DiversifiedTransmissionKey, Diversifier, EphemeralSecretKey, FullViewingKey,
@@ -604,7 +605,6 @@ mod tests {
         },
         primitives::redpallas,
         value::{NoteValue, ValueCommitTrapdoor, ValueCommitment, ValueSum},
-        Address, Note,
     };
 
     fn v3_encrypted_action() -> (
@@ -636,7 +636,11 @@ mod tests {
         let encrypted_note = TransmittedNoteCiphertext {
             epk_bytes: IronwoodDomain::epk_bytes(encryptor.epk()).0,
             enc_ciphertext: encryptor.encrypt_note_plaintext(),
-            out_ciphertext: encryptor.encrypt_outgoing_plaintext(&cv_net, &cmx, &mut rng),
+            out_ciphertext: encryptor.encrypt_outgoing_plaintext(
+                &cv_net,
+                &cmx,
+                &mut RngCore06::new(&mut rng),
+            ),
         };
         let action = Action::from_parts(
             nf_old,
@@ -756,7 +760,7 @@ mod tests {
 
             assert_eq!(ne.encrypt_note_plaintext().as_ref(), &tv.c_enc[..]);
             assert_eq!(
-                &ne.encrypt_outgoing_plaintext(&cv_net, &cmx, &mut OsRng)[..],
+                &ne.encrypt_outgoing_plaintext(&cv_net, &cmx, &mut RngCore06::new(&mut OsRng),)[..],
                 &tv.c_out[..]
             );
         }
@@ -804,12 +808,16 @@ mod tests {
                 .map(|(note, _)| note),
             Some(note_v3)
         );
-        assert!(orchard_domain
-            .parse_note_plaintext_without_memo_ovk(pk_d, &np_v3)
-            .is_none());
-        assert!(ironwood_domain
-            .parse_note_plaintext_without_memo_ovk(pk_d, &np_v2)
-            .is_none());
+        assert!(
+            orchard_domain
+                .parse_note_plaintext_without_memo_ovk(pk_d, &np_v3)
+                .is_none()
+        );
+        assert!(
+            ironwood_domain
+                .parse_note_plaintext_without_memo_ovk(pk_d, &np_v2)
+                .is_none()
+        );
     }
 
     #[test]
@@ -1021,5 +1029,51 @@ mod tests {
                 .collect();
             assert_eq!(batched_wnaf, expected);
         }
+    }
+
+    #[test]
+    fn batched_agreement_matches_per_item_large_batch() {
+        // Enough ephemeral keys to cross the GLV batch-affine threshold in
+        // `pasta_curves` (32 live points) with wide margin, so the
+        // synchronized batched-inversion ladder — not just its small-batch
+        // fallback — stays exercised through the public batch API even if
+        // the threshold is retuned upward. The ephemeral keys are
+        // synthesized as arbitrary non-identity Pallas points; only their
+        // group structure matters to key agreement.
+        use group::{Group, GroupEncoding};
+
+        let mut rng = OsRng;
+        let fvk = FullViewingKey::from(&SpendingKey::random(&mut rng));
+        let ivk = PreparedIncomingViewingKey::new(&fvk.to_ivk(Scope::External));
+
+        let mut keys: Vec<EphemeralKeyBytes> = (1..=520u64)
+            .map(|i| {
+                EphemeralKeyBytes(
+                    (pasta_curves::pallas::Point::generator()
+                        * pasta_curves::pallas::Scalar::from(i))
+                    .to_bytes(),
+                )
+            })
+            .collect();
+        // One undecodable lane threaded through the middle of the batch.
+        keys.insert(260, EphemeralKeyBytes([0u8; 32]));
+
+        let batch_prepared = <OrchardDomain as BatchDomain>::batch_epk(keys.iter().cloned());
+        let expected: Vec<Option<[u8; 32]>> = keys
+            .iter()
+            .map(|key| {
+                OrchardDomain::epk(key)
+                    .map(OrchardDomain::prepare_epk)
+                    .map(|epk| OrchardDomain::ka_agree_dec(&ivk, &epk).to_bytes())
+            })
+            .collect();
+        let batched: Vec<Option<[u8; 32]>> = <OrchardDomain as BatchDomain>::batch_ka_agree_dec(
+            &ivk,
+            batch_prepared.iter().map(|(p, _)| p.as_ref()),
+        )
+        .into_iter()
+        .map(|s| s.map(|s| s.to_bytes()))
+        .collect();
+        assert_eq!(batched, expected);
     }
 }

@@ -4,16 +4,16 @@ use alloc::vec::Vec;
 
 use group::{Curve, GroupEncoding};
 use halo2_proofs::{
-    circuit::{floor_planner, Layouter, Value},
+    circuit::{Layouter, Value, floor_planner},
     plonk::{
-        self, Advice, BatchVerifier, Column, Constraints, Expression, Instance as InstanceColumn,
-        Selector, SingleVerifier,
+        self, Advice, BatchVerifier, Column, Constraints, Expression, Fixed,
+        Instance as InstanceColumn, Selector, SingleVerifier,
     },
-    poly::Rotation,
+    poly::{Rotation, commitment::Params},
     transcript::{Blake2bRead, Blake2bWrite},
 };
 use pasta_curves::{arithmetic::CurveAffine, pallas, vesta};
-use rand::RngCore;
+use rand::Rng;
 
 use self::{
     commit_ivk::{CommitIvkChip, CommitIvkConfig},
@@ -27,16 +27,16 @@ use crate::{
     builder::SpendInfo,
     bundle::Flags,
     constants::{
-        OrchardCommitDomains, OrchardFixedBases, OrchardFixedBasesFull, OrchardHashDomains,
-        MERKLE_DEPTH_ORCHARD,
+        MERKLE_DEPTH_ORCHARD, OrchardCommitDomains, OrchardFixedBases, OrchardFixedBasesFull,
+        OrchardHashDomains,
     },
     keys::{
         CommitIvkRandomness, DiversifiedTransmissionKey, NullifierDerivingKey, SpendValidatingKey,
     },
     note::{
+        ExtractedNoteCommitment, Note, Rho,
         commitment::{NoteCommitTrapdoor, NoteCommitment},
         nullifier::Nullifier,
-        ExtractedNoteCommitment, Note, Rho,
     },
     primitives::redpallas::{SpendAuth, VerificationKey},
     spec::NonIdentityPallasPoint,
@@ -45,16 +45,16 @@ use crate::{
 };
 use halo2_gadgets::{
     ecc::{
-        chip::{EccChip, EccConfig},
         CircuitVersion, FixedPoint, NonIdentityPoint, Point, ScalarFixed, ScalarFixedShort,
         ScalarVar,
+        chip::{EccChip, EccConfig},
     },
-    poseidon::{primitives as poseidon, Pow5Chip as PoseidonChip, Pow5Config as PoseidonConfig},
+    poseidon::{Pow5Chip as PoseidonChip, Pow5Config as PoseidonConfig, primitives as poseidon},
     sinsemilla::{
         chip::{SinsemillaChip, SinsemillaConfig},
         merkle::{
-            chip::{MerkleChip, MerkleConfig},
             MerklePath,
+            chip::{MerkleChip, MerkleConfig},
         },
     },
     utilities::lookup_range_check::{LookupRangeCheck, LookupRangeCheckConfig},
@@ -75,6 +75,24 @@ pub use crate::Proof;
 /// Size of the Orchard circuit.
 const K: u32 = 11;
 
+/// Canonical encoding of [`Params::new`] for [`vesta::Affine`] at [`K`].
+const ORCHARD_K11_PARAMS: &[u8] = include_bytes!("circuit_data/orchard_k11_params.bin");
+
+fn orchard_k11_params() -> Params<vesta::Affine> {
+    let mut encoded = ORCHARD_K11_PARAMS;
+    let params = Params::read(&mut encoded).expect("embedded Orchard parameters must decode");
+    assert!(
+        encoded.is_empty(),
+        "embedded Orchard parameters have trailing data"
+    );
+    assert_eq!(params.k(), K, "embedded Orchard parameters use the wrong k");
+    params
+}
+
+/// Shape of the public instance consumed by one Orchard Action proof.
+const INSTANCE_COLUMNS: usize = 1;
+const INSTANCE_ROWS: usize = 10;
+
 // Absolute offsets for public inputs.
 const ANCHOR: usize = 0;
 const CV_NET_X: usize = 1;
@@ -91,6 +109,7 @@ const DISABLE_CROSS_ADDRESS: usize = 9;
 #[derive(Clone, Debug)]
 pub struct Config {
     primary: Column<InstanceColumn>,
+    constant: Column<Fixed>,
     q_orchard: Selector,
     advices: [Column<Advice>; 10],
     add_config: AddConfig,
@@ -482,6 +501,7 @@ impl Config {
 
         Config {
             primary,
+            constant: lagrange_coeffs[0],
             q_orchard,
             advices,
             add_config,
@@ -1087,7 +1107,7 @@ impl VerifyingKey {
     ///
     /// See [`OrchardCircuitVersion`] for which version to use.
     pub fn build(circuit_version: OrchardCircuitVersion) -> Self {
-        let params = halo2_proofs::poly::commitment::Params::new(K);
+        let params = orchard_k11_params();
         let circuit = Circuit::empty(circuit_version);
 
         let vk = plonk::keygen_vk(&params, &circuit).unwrap();
@@ -1108,6 +1128,34 @@ impl VerifyingKey {
     pub fn supports_cross_address_restriction(&self) -> bool {
         self.circuit_version.supports_cross_address_restriction()
     }
+
+    /// Prepares this key for repeated proof verification: builds and caches
+    /// a prepared fixed-base zero-check over the key's SRS, which the halo2
+    /// verifier's final identity test then routes through (see
+    /// `halo2_proofs::poly::commitment::Params::prepare_zero_checks`).
+    ///
+    /// Preparation costs on the order of a hundred milliseconds and tens of
+    /// mebibytes, amortized across every subsequent verification with this
+    /// key — [`crate::bundle::BatchValidator`] included, which pays a single
+    /// final check per batch. Long-lived validators (nodes, wallet backends)
+    /// should call this once after constructing the key; one-shot verifiers
+    /// need not.
+    ///
+    /// Returns whether a prepared check was actually built and cached;
+    /// `false` means arming was a no-op (Orchard was built without its
+    /// opt-in `orbits` feature, or its backend declined) and verification
+    /// simply keeps its unprepared path. Callers may ignore the result;
+    /// validators that expect the speedup can assert or log it.
+    ///
+    /// The prepared path is used only on bounded-width pools (currently
+    /// eight effective threads) — past that the unprepared planner
+    /// out-scales it and halo2 falls back automatically — so arming never
+    /// slows verification down, but the speedup materializes on narrow
+    /// pools (single-proof verification, constrained validators), not on
+    /// wide desktop pools.
+    pub fn prepare_batch_validation(&self) -> bool {
+        self.params.prepare_zero_checks()
+    }
 }
 
 /// The proving key for the Orchard Action circuit.
@@ -1122,11 +1170,38 @@ pub struct ProvingKey {
 }
 
 impl ProvingKey {
+    /// Builds and caches prepared fixed-base commitment tables over this
+    /// key's SRS (see
+    /// [`halo2_proofs::poly::commitment::Params::prepare_commitments`]).
+    /// Long-lived provers (wallet backends, proving services) should call
+    /// this once after constructing the key: the prover's polynomial
+    /// commitments then evaluate through the preparations on pools of at
+    /// most eight effective threads, extended to ten on AArch64 macOS for
+    /// Orchard's `k = 11` SRS (measured end to end on Apple M4). Wider pools
+    /// retain their usual multiexp. One-shot provers need not prepare. With
+    /// the default multicore, no-orbits build at `k = 11`, the three tables
+    /// account for about 25.3 MiB and took about 36 ms to build on the
+    /// benchmarked M4, amortized across proofs. With `orbits`, the two tables
+    /// account for about 24.8 MiB and took about 34 ms.
+    ///
+    /// Call this once before entering concurrent Rayon proving work.
+    /// Concurrent callers outside that pool safely wait for and share the same
+    /// attempt; fanning a cold call out across the worker pool can occupy its
+    /// other workers and serialize the initializer's parallel work.
+    ///
+    /// Returns whether the tables were actually built and cached; `false`
+    /// means arming was a no-op (Orchard was built with neither `multicore`
+    /// nor `orbits`, or its backend declined) and proving simply keeps its
+    /// unprepared path. Callers may ignore the result.
+    pub fn prepare_proving(&self) -> bool {
+        self.params.prepare_commitments()
+    }
+
     /// Builds the proving key for the given circuit version.
     ///
     /// See [`OrchardCircuitVersion`] for which version to use.
     pub fn build(circuit_version: OrchardCircuitVersion) -> Self {
-        let params = halo2_proofs::poly::commitment::Params::new(K);
+        let params = orchard_k11_params();
         let circuit = Circuit::empty(circuit_version);
 
         let vk = plonk::keygen_vk(&params, &circuit).unwrap();
@@ -1136,6 +1211,18 @@ impl ProvingKey {
             params,
             pk,
             circuit_version,
+        }
+    }
+
+    /// Returns the [`VerifyingKey`] corresponding to this proving key.
+    ///
+    /// This clones the key material already contained in the proving key; it
+    /// does not perform key generation.
+    pub fn verifying_key(&self) -> VerifyingKey {
+        VerifyingKey {
+            params: self.params.clone(),
+            vk: self.pk.get_vk().clone(),
+            circuit_version: self.circuit_version,
         }
     }
 
@@ -1252,8 +1339,8 @@ impl Instance {
         self.cross_address_disabled
     }
 
-    fn to_halo2_instance(&self) -> [[vesta::Scalar; 10]; 1] {
-        let mut instance = [vesta::Scalar::zero(); 10];
+    fn to_halo2_instance(&self) -> [[vesta::Scalar; INSTANCE_ROWS]; INSTANCE_COLUMNS] {
+        let mut instance = [vesta::Scalar::zero(); INSTANCE_ROWS];
 
         instance[ANCHOR] = self.anchor.inner();
         instance[CV_NET_X] = self.cv_net.x();
@@ -1302,7 +1389,7 @@ impl Proof {
         pk: &ProvingKey,
         circuits: &[Circuit],
         instances: &[Instance],
-        mut rng: impl RngCore,
+        mut rng: impl Rng,
     ) -> Result<Self, plonk::Error> {
         if circuits
             .iter()
@@ -1399,16 +1486,24 @@ impl Proof {
 mod fingerprint;
 
 #[cfg(test)]
+mod benchmark;
+
+#[cfg(test)]
 mod tests {
     use alloc::vec::Vec;
     use core::iter;
 
     use ff::Field;
-    use halo2_proofs::{circuit::Value, dev::MockProver};
+    use halo2_proofs::{circuit::Value, dev::MockProver, poly::commitment::Params};
     use pasta_curves::{pallas, vesta};
-    use rand::{rngs::OsRng, RngCore};
+    use rand::Rng;
 
-    use super::{Circuit, Instance, OrchardCircuitVersion, Proof, ProvingKey, VerifyingKey, K};
+    use crate::rng_compat::OsRng;
+
+    use super::{
+        Circuit, Instance, K, ORCHARD_K11_PARAMS, OrchardCircuitVersion, Proof, VerifyingKey,
+        orchard_k11_params,
+    };
     use crate::{
         bundle::{BundleVersion, Flags},
         keys::SpendValidatingKey,
@@ -1417,9 +1512,20 @@ mod tests {
         value::{ValueCommitTrapdoor, ValueCommitment},
     };
 
+    #[test]
+    fn embedded_orchard_params_match_generation() {
+        let mut generated = Vec::new();
+        Params::<vesta::Affine>::new(K)
+            .write(&mut generated)
+            .unwrap();
+
+        assert_eq!(generated, ORCHARD_K11_PARAMS);
+        assert_eq!(orchard_k11_params().k(), K);
+    }
+
     /// Generates a circuit and instance whose output note is addressed to an expanded
     /// receiver distinct from the spent note's.
-    fn generate_circuit_instance<R: RngCore>(
+    pub(super) fn generate_circuit_instance<R: Rng>(
         rng: R,
         circuit_version: OrchardCircuitVersion,
     ) -> (Circuit, Instance) {
@@ -1428,14 +1534,14 @@ mod tests {
 
     /// Generates a circuit and instance whose output note is addressed to the spent
     /// note's expanded receiver, as the cross-address restriction requires.
-    fn generate_self_transfer_circuit_instance<R: RngCore>(
+    fn generate_self_transfer_circuit_instance<R: Rng>(
         rng: R,
         circuit_version: OrchardCircuitVersion,
     ) -> (Circuit, Instance) {
         generate_circuit_instance_inner(rng, circuit_version, true)
     }
 
-    fn generate_circuit_instance_inner<R: RngCore>(
+    fn generate_circuit_instance_inner<R: Rng>(
         mut rng: R,
         circuit_version: OrchardCircuitVersion,
         output_matches_spend: bool,
@@ -1673,17 +1779,18 @@ mod tests {
             generate_self_transfer_circuit_instance(&mut rng, OrchardCircuitVersion::PostNu6_3);
         instance.cross_address_disabled = true;
 
-        let pk = ProvingKey::build(OrchardCircuitVersion::PostNu6_3);
-        let vk = VerifyingKey::build(OrchardCircuitVersion::PostNu6_3);
+        let keys = crate::cached_test_keys(OrchardCircuitVersion::PostNu6_3);
+        let pk = keys.proving_key();
+        let vk = keys.verifying_key();
 
         let proof = Proof::create(
-            &pk,
+            pk,
             core::slice::from_ref(&circuit),
             core::slice::from_ref(&instance),
             &mut rng,
         )
         .unwrap();
-        assert!(proof.verify(&vk, core::slice::from_ref(&instance)).is_ok());
+        assert!(proof.verify(vk, core::slice::from_ref(&instance)).is_ok());
     }
 
     // FixedPostNu6_2 leaves instance row 9 (`disableCrossAddress`) unconstrained, so a
@@ -1699,8 +1806,9 @@ mod tests {
             generate_circuit_instance(&mut rng, OrchardCircuitVersion::FixedPostNu6_2);
         instance.cross_address_disabled = true;
 
-        let pk = ProvingKey::build(OrchardCircuitVersion::FixedPostNu6_2);
-        let vk = VerifyingKey::build(OrchardCircuitVersion::FixedPostNu6_2);
+        let keys = crate::cached_test_keys(OrchardCircuitVersion::FixedPostNu6_2);
+        let pk = keys.proving_key();
+        let vk = keys.verifying_key();
 
         let raw_instances = instance.to_halo2_instance();
         let raw_instances: Vec<_> = raw_instances.iter().map(|i| &i[..]).collect();
@@ -1720,18 +1828,20 @@ mod tests {
 
         let strategy = super::SingleVerifier::new(&vk.params);
         let mut transcript = Blake2bRead::init(&proof_bytes[..]);
-        assert!(super::plonk::verify_proof(
-            &vk.params,
-            &vk.vk,
-            strategy,
-            &raw_instances,
-            &mut transcript,
-        )
-        .is_ok());
+        assert!(
+            super::plonk::verify_proof(
+                &vk.params,
+                &vk.vk,
+                strategy,
+                &raw_instances,
+                &mut transcript,
+            )
+            .is_ok()
+        );
 
         assert!(matches!(
             Proof::create(
-                &pk,
+                pk,
                 core::slice::from_ref(&circuit),
                 core::slice::from_ref(&instance),
                 &mut rng,
@@ -1741,7 +1851,7 @@ mod tests {
 
         let proof = Proof::new(proof_bytes);
         assert!(matches!(
-            proof.verify(&vk, core::slice::from_ref(&instance)),
+            proof.verify(vk, core::slice::from_ref(&instance)),
             Err(super::plonk::Error::InvalidInstances),
         ));
     }
@@ -1752,8 +1862,8 @@ mod tests {
         circuit_version: OrchardCircuitVersion,
         path: &str,
         expected: &str,
-    ) -> VerifyingKey {
-        let vk = VerifyingKey::build(circuit_version);
+    ) -> &'static VerifyingKey {
+        let vk = crate::cached_test_keys(circuit_version).verifying_key();
 
         if std::env::var_os("ORCHARD_CIRCUIT_TEST_GENERATE_NEW_PROOF").is_some() {
             std::fs::write(path, format!("{:#?}\n", vk.vk.pinned()))
@@ -1769,10 +1879,14 @@ mod tests {
     }
 
     // TODO: recast as a proptest
-    fn round_trip_for_version(circuit_version: OrchardCircuitVersion, vk: &VerifyingKey) {
+    fn round_trip_for_version(
+        circuit_version: OrchardCircuitVersion,
+        vk: &VerifyingKey,
+        action_count: usize,
+    ) {
         let mut rng = OsRng;
 
-        let (circuits, instances): (Vec<_>, Vec<_>) = iter::once(())
+        let (circuits, instances): (Vec<_>, Vec<_>) = iter::repeat_n((), action_count)
             .map(|()| generate_circuit_instance(&mut rng, circuit_version))
             .unzip();
 
@@ -1816,8 +1930,8 @@ mod tests {
             );
         }
 
-        let pk = ProvingKey::build(circuit_version);
-        let proof = Proof::create(&pk, &circuits, &instances, &mut rng).unwrap();
+        let pk = crate::cached_test_keys(circuit_version).proving_key();
+        let proof = Proof::create(pk, &circuits, &instances, &mut rng).unwrap();
         assert!(proof.verify(vk, &instances).is_ok());
         assert_eq!(proof.0.len(), expected_proof_size);
     }
@@ -1829,7 +1943,7 @@ mod tests {
             "src/circuit_data/circuit_description_fixed",
             include_str!("circuit_data/circuit_description_fixed"),
         );
-        round_trip_for_version(OrchardCircuitVersion::FixedPostNu6_2, &vk);
+        round_trip_for_version(OrchardCircuitVersion::FixedPostNu6_2, vk, 2);
     }
 
     #[test]
@@ -1839,65 +1953,46 @@ mod tests {
             "src/circuit_data/circuit_description_post_nu6_3",
             include_str!("circuit_data/circuit_description_post_nu6_3"),
         );
-        round_trip_for_version(OrchardCircuitVersion::PostNu6_3, &vk);
+        round_trip_for_version(OrchardCircuitVersion::PostNu6_3, vk, 1);
     }
 
-    // Proves with the proving key for `proving_version` and checks that the proof verifies under
-    // the verifying key for the same version, but not under a version with a different verifying
-    // key.
-    fn proof_is_rejected_by_other_circuit_version(
-        proving_version: OrchardCircuitVersion,
-        other_version: OrchardCircuitVersion,
-    ) {
-        let mut rng = OsRng;
+    const CIRCUIT_VERSIONS: [OrchardCircuitVersion; 3] = [
+        OrchardCircuitVersion::InsecurePreNu6_2,
+        OrchardCircuitVersion::FixedPostNu6_2,
+        OrchardCircuitVersion::PostNu6_3,
+    ];
 
+    fn assert_proof_verifies_only_against_matching_version(proving_version: OrchardCircuitVersion) {
+        let mut rng = OsRng;
         let (circuit, instance) = generate_circuit_instance(&mut rng, proving_version);
         let instances = core::slice::from_ref(&instance);
+        let pk = crate::cached_test_keys(proving_version).proving_key();
+        let proof = Proof::create(pk, &[circuit], instances, &mut rng).unwrap();
 
-        let pk = ProvingKey::build(proving_version);
-        let proof = Proof::create(&pk, &[circuit], instances, &mut rng).unwrap();
-
-        // Verifies under the matching version's verifying key.
-        let vk_matching = VerifyingKey::build(proving_version);
-        assert!(proof.verify(&vk_matching, instances).is_ok());
-
-        // Does not verify under the other version's verifying key.
-        let vk_other = VerifyingKey::build(other_version);
-        assert!(proof.verify(&vk_other, instances).is_err());
+        for verifying_version in CIRCUIT_VERSIONS {
+            let vk = crate::cached_test_keys(verifying_version).verifying_key();
+            assert_eq!(
+                proof.verify(vk, instances).is_ok(),
+                proving_version == verifying_version,
+            );
+        }
     }
 
     #[test]
-    fn proof_verifies_against_matching_circuit_version() {
-        // Insecure proofs are rejected by the anchored circuit versions, and anchored proofs are
-        // rejected by the insecure verifying key.
-        proof_is_rejected_by_other_circuit_version(
-            OrchardCircuitVersion::FixedPostNu6_2,
+    fn insecure_proof_verifies_only_against_matching_version() {
+        assert_proof_verifies_only_against_matching_version(
             OrchardCircuitVersion::InsecurePreNu6_2,
-        );
-        proof_is_rejected_by_other_circuit_version(
-            OrchardCircuitVersion::PostNu6_3,
-            OrchardCircuitVersion::InsecurePreNu6_2,
-        );
-        proof_is_rejected_by_other_circuit_version(
-            OrchardCircuitVersion::InsecurePreNu6_2,
-            OrchardCircuitVersion::FixedPostNu6_2,
-        );
-        proof_is_rejected_by_other_circuit_version(
-            OrchardCircuitVersion::InsecurePreNu6_2,
-            OrchardCircuitVersion::PostNu6_3,
         );
     }
 
     #[test]
-    fn fixed_and_post_nu6_3_have_distinct_verifying_keys() {
-        proof_is_rejected_by_other_circuit_version(
-            OrchardCircuitVersion::FixedPostNu6_2,
-            OrchardCircuitVersion::PostNu6_3,
-        );
-        proof_is_rejected_by_other_circuit_version(
-            OrchardCircuitVersion::PostNu6_3,
-            OrchardCircuitVersion::FixedPostNu6_2,
-        );
+    fn fixed_proof_verifies_only_against_matching_version() {
+        assert_proof_verifies_only_against_matching_version(OrchardCircuitVersion::FixedPostNu6_2);
+    }
+
+    #[test]
+    fn post_nu6_3_proof_verifies_only_against_matching_version() {
+        assert_proof_verifies_only_against_matching_version(OrchardCircuitVersion::PostNu6_3);
     }
 
     // Proving a circuit with a proving key for a different circuit version is a misuse: the
@@ -1924,10 +2019,10 @@ mod tests {
             let (circuit, instance) = generate_circuit_instance(&mut rng, circuit_version);
             let instances = core::slice::from_ref(&instance);
 
-            let mismatched_pk = ProvingKey::build(pk_version);
+            let mismatched_pk = crate::cached_test_keys(pk_version).proving_key();
 
             assert!(matches!(
-                Proof::create(&mismatched_pk, &[circuit], instances, &mut rng),
+                Proof::create(mismatched_pk, &[circuit], instances, &mut rng),
                 Err(super::plonk::Error::Synthesis),
             ));
         }
@@ -1941,7 +2036,7 @@ mod tests {
         expected_proof_size: usize,
         restricted: bool,
     ) {
-        let vk = VerifyingKey::build(circuit_version);
+        let vk = crate::cached_test_keys(circuit_version).verifying_key();
         // Set ORCHARD_CIRCUIT_TEST_GENERATE_NEW_PROOF to regenerate this serialized proof
         // fixture. The non-regeneration path embeds and verifies the checked-in fixture.
         if std::env::var_os("ORCHARD_CIRCUIT_TEST_GENERATE_NEW_PROOF").is_some() {
@@ -1956,9 +2051,9 @@ mod tests {
                 instance.cross_address_disabled = restricted;
                 let instances = core::slice::from_ref(&instance);
 
-                let pk = ProvingKey::build(circuit_version);
-                let proof = Proof::create(&pk, &[circuit], instances, &mut rng).unwrap();
-                assert!(proof.verify(&vk, instances).is_ok());
+                let pk = crate::cached_test_keys(circuit_version).proving_key();
+                let proof = Proof::create(pk, &[circuit], instances, &mut rng).unwrap();
+                assert!(proof.verify(vk, instances).is_ok());
 
                 let file = std::fs::File::create(proof_path)?;
                 write_test_case(file, &instance, &proof, encoding)
@@ -1975,7 +2070,7 @@ mod tests {
         assert_eq!(instance.cross_address_disabled(), restricted);
         assert_eq!(proof.0.len(), expected_proof_size);
 
-        assert!(proof.verify(&vk, &[instance]).is_ok());
+        assert!(proof.verify(vk, &[instance]).is_ok());
     }
 
     #[test]
@@ -2021,7 +2116,7 @@ mod tests {
     // pre-NU6.2 verifying key and a sample proof, so they are never regenerated.
     #[test]
     fn insecure_against_stored_circuit() {
-        let vk = VerifyingKey::build(OrchardCircuitVersion::InsecurePreNu6_2);
+        let vk = crate::cached_test_keys(OrchardCircuitVersion::InsecurePreNu6_2).verifying_key();
         assert_eq!(
             format!("{:#?}\n", vk.vk.pinned()),
             include_str!("circuit_data/circuit_description_insecure").replace("\r\n", "\n")
@@ -2034,7 +2129,7 @@ mod tests {
                 .expect("proof must be valid")
         };
         assert_eq!(proof.0.len(), 4992);
-        assert!(proof.verify(&vk, &[instance]).is_ok());
+        assert!(proof.verify(vk, &[instance]).is_ok());
     }
 
     #[cfg(feature = "dev-graph")]

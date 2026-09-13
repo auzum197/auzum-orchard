@@ -50,7 +50,7 @@ use pasta_curves::{
     arithmetic::{CurveAffine, CurveExt},
     pallas,
 };
-use rand::RngCore;
+use rand::Rng;
 use subtle::CtOption;
 
 use crate::{
@@ -297,8 +297,8 @@ impl<'a> Sum<&'a ValueCommitTrapdoor> for ValueCommitTrapdoor {
 
 impl ValueCommitTrapdoor {
     /// Generates a new value commitment trapdoor.
-    pub(crate) fn random(rng: impl RngCore) -> Self {
-        ValueCommitTrapdoor(pallas::Scalar::random(rng))
+    pub(crate) fn random(mut rng: impl Rng) -> Self {
+        ValueCommitTrapdoor(pallas::Scalar::random(&mut rng))
     }
 
     /// Returns the zero trapdoor, which provides no blinding.
@@ -412,7 +412,7 @@ pub mod testing {
     use pasta_curves::pallas;
     use proptest::prelude::*;
 
-    use super::{NoteValue, ValueCommitTrapdoor, ValueSum, MAX_NOTE_VALUE, VALUE_SUM_RANGE};
+    use super::{MAX_NOTE_VALUE, NoteValue, VALUE_SUM_RANGE, ValueCommitTrapdoor, ValueSum};
 
     prop_compose! {
         /// Generate an arbitrary Pallas scalar.
@@ -474,8 +474,8 @@ mod tests {
     use proptest::prelude::*;
 
     use super::{
+        BalanceError, MAX_NOTE_VALUE, ValueCommitTrapdoor, ValueCommitment, ValueSum,
         testing::{arb_note_value_bounded, arb_trapdoor, arb_value_sum_bounded},
-        BalanceError, ValueCommitTrapdoor, ValueCommitment, ValueSum, MAX_NOTE_VALUE,
     };
     use crate::primitives::redpallas;
 

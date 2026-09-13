@@ -22,17 +22,16 @@ use crate::{
 };
 use halo2_gadgets::{
     ecc::{
-        chip::{EccChip, NonIdentityEccPoint},
         Point, ScalarFixed,
+        chip::{EccChip, NonIdentityEccPoint},
     },
     sinsemilla::{
-        chip::{SinsemillaChip, SinsemillaConfig},
         CommitDomain, Message, MessagePiece,
+        chip::{SinsemillaChip, SinsemillaConfig},
     },
     utilities::{
-        bool_check,
+        FieldValue, RangeConstrained, bool_check,
         lookup_range_check::{LookupRangeCheck, LookupRangeCheckConfig},
-        FieldValue, RangeConstrained,
     },
 };
 
@@ -2041,18 +2040,18 @@ mod tests {
     use crate::{
         circuit::{
             gadget::assign_free_advice,
-            note_commit::{gadgets, NoteCommitChip},
+            note_commit::{NoteCommitChip, gadgets},
         },
         constants::{
-            fixed_bases::NOTE_COMMITMENT_PERSONALIZATION, OrchardCommitDomains, OrchardFixedBases,
-            OrchardHashDomains, L_ORCHARD_BASE, L_VALUE, T_Q,
+            L_ORCHARD_BASE, L_VALUE, OrchardCommitDomains, OrchardFixedBases, OrchardHashDomains,
+            T_Q, fixed_bases::NOTE_COMMITMENT_PERSONALIZATION,
         },
         value::NoteValue,
     };
     use halo2_gadgets::{
         ecc::{
-            chip::{CircuitVersion, EccChip, EccConfig},
             NonIdentityPoint, ScalarFixed,
+            chip::{CircuitVersion, EccChip, EccConfig},
         },
         sinsemilla::chip::SinsemillaChip,
         sinsemilla::primitives::CommitDomain,
@@ -2068,7 +2067,9 @@ mod tests {
     };
     use pasta_curves::{arithmetic::CurveAffine, pallas};
 
-    use rand::{rngs::OsRng, RngCore};
+    use rand::Rng;
+
+    use crate::rng_compat::OsRng;
 
     #[test]
     fn note_commit() {
@@ -2244,7 +2245,7 @@ mod tests {
                     self.psi,
                 )?;
 
-                let rcm = pallas::Scalar::random(OsRng);
+                let rcm = pallas::Scalar::random(&mut OsRng);
                 let rcm_gadget = ScalarFixed::new(
                     ecc_chip.clone(),
                     layouter.namespace(|| "rcm"),

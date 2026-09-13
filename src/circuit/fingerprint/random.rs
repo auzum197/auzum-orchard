@@ -47,7 +47,7 @@ use std::io;
 use ff::Field;
 use group::{Curve, Group};
 use halo2_proofs::plonk::fingerprint::{
-    capture_proof_fingerprint, ChallengeRecorder, TranscriptEvent,
+    ChallengeRecorder, TranscriptEvent, capture_proof_fingerprint,
 };
 use halo2_proofs::transcript::{
     Blake2bWrite, Challenge255, EncodedChallenge, Transcript, TranscriptRead, TranscriptWrite,
@@ -55,7 +55,7 @@ use halo2_proofs::transcript::{
 use pasta_curves::vesta;
 use rand_chacha::ChaCha20Rng;
 
-use super::super::{OrchardCircuitVersion, VerifyingKey, K};
+use super::super::{K, OrchardCircuitVersion};
 use super::{assert_pinned_verifying_key, fixture_rng, raw_instance_refs};
 
 /// Public-instance rows per action for the pinned Post-NU6.3 circuit
@@ -187,9 +187,9 @@ pub(super) fn capture_random_fixture(
     let mut rng = fixture_rng(seed);
     // No proving key and no bundle: random captures need synthesis (inside `keygen_vk`) plus two
     // verifier runs, never a prover run.
-    let vk = VerifyingKey::build(OrchardCircuitVersion::PostNu6_3);
+    let vk = crate::cached_test_keys(OrchardCircuitVersion::PostNu6_3).verifying_key();
     assert!(vk.supports_cross_address_restriction());
-    assert_pinned_verifying_key(&vk);
+    assert_pinned_verifying_key(vk);
 
     // Random public instances with the honest captures' shape: one column of `INSTANCE_ROWS`
     // rows per action, sampled as raw field elements at the halo2 interface (the typed orchard
@@ -197,9 +197,11 @@ pub(super) fn capture_random_fixture(
     // Instances are drawn from the seeded stream first; the rng then moves into the transcript.
     let raw_instances: Vec<Vec<Vec<vesta::Scalar>>> = (0..num_actions)
         .map(|_| {
-            vec![(0..INSTANCE_ROWS)
-                .map(|_| vesta::Scalar::random(&mut rng))
-                .collect()]
+            vec![
+                (0..INSTANCE_ROWS)
+                    .map(|_| vesta::Scalar::random(&mut rng))
+                    .collect(),
+            ]
         })
         .collect();
     let raw_instance_refs = raw_instance_refs(&raw_instances);

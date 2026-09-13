@@ -3,7 +3,7 @@ use core::fmt;
 
 use halo2_proofs::plonk;
 use pasta_curves::vesta;
-use rand::{CryptoRng, RngCore};
+use rand::{CryptoRng, Rng};
 use tracing::debug;
 
 use super::{Authorized, Bundle};
@@ -118,7 +118,7 @@ impl<'a> BatchValidator<'a> {
     ///
     /// The cross-address-restriction capability is enforced when bundles are added (see
     /// [`Self::add_bundle`]), so it is already guaranteed here.
-    pub fn validate<R: RngCore + CryptoRng>(self, rng: R) -> bool {
+    pub fn validate<R: Rng + CryptoRng>(self, rng: R) -> bool {
         // https://p.z.cash/TCR:bad-txns-orchard-binding-signature-invalid?partial
 
         if self.signatures.is_empty() {
@@ -146,12 +146,12 @@ impl<'a> BatchValidator<'a> {
 
 #[cfg(test)]
 mod tests {
-    use rand::rngs::OsRng;
+    use crate::rng_compat::OsRng;
 
     use super::{BatchError, BatchValidator};
     use crate::{
         bundle::tests::{sample_authorized_bundle, with_cross_address_disabled},
-        circuit::{OrchardCircuitVersion, VerifyingKey},
+        circuit::OrchardCircuitVersion,
     };
 
     #[test]
@@ -166,8 +166,8 @@ mod tests {
             OrchardCircuitVersion::InsecurePreNu6_2,
             OrchardCircuitVersion::FixedPostNu6_2,
         ] {
-            let vk = VerifyingKey::build(circuit_version);
-            let mut validator = BatchValidator::new(&vk);
+            let vk = crate::cached_test_keys(circuit_version).verifying_key();
+            let mut validator = BatchValidator::new(vk);
             assert_eq!(
                 validator.add_bundle(&bundle, [0; 32]),
                 Err(BatchError::RestrictionUnsupportedByKey)
@@ -175,8 +175,8 @@ mod tests {
         }
 
         // The post-NU 6.3 key supports the restriction, so the bundle is accepted.
-        let vk = VerifyingKey::build(OrchardCircuitVersion::PostNu6_3);
-        let mut validator = BatchValidator::new(&vk);
+        let vk = crate::cached_test_keys(OrchardCircuitVersion::PostNu6_3).verifying_key();
+        let mut validator = BatchValidator::new(vk);
         assert_eq!(validator.add_bundle(&bundle, [0; 32]), Ok(()));
     }
 
@@ -187,8 +187,8 @@ mod tests {
             OrchardCircuitVersion::FixedPostNu6_2,
             OrchardCircuitVersion::PostNu6_3,
         ] {
-            let vk = VerifyingKey::build(circuit_version);
-            assert!(BatchValidator::new(&vk).validate(OsRng));
+            let vk = crate::cached_test_keys(circuit_version).verifying_key();
+            assert!(BatchValidator::new(vk).validate(OsRng));
         }
     }
 }

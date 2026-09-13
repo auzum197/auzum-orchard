@@ -6,10 +6,10 @@
 //! commitment, in a way that keeps them unlinkable without the viewing key
 //! but uniquely tied to the note.
 
-use group::{ff::PrimeField, Group};
+use group::{Group, ff::PrimeField};
 use memuse::DynamicUsage;
 use pasta_curves::{arithmetic::CurveExt, pallas};
-use rand::RngCore;
+use rand::Rng;
 use subtle::{ConstantTimeEq, CtOption};
 
 use super::NoteCommitment;
@@ -50,7 +50,7 @@ impl Nullifier {
     ///
     /// Instead of explicitly sampling for a unique nullifier, we rely here on the size of
     /// the base field to make the chance of sampling a colliding nullifier negligible.
-    pub(crate) fn dummy(rng: &mut impl RngCore) -> Self {
+    pub(crate) fn dummy(rng: &mut impl Rng) -> Self {
         Nullifier(extract_p(&pallas::Point::random(rng)))
     }
 
@@ -91,7 +91,7 @@ impl ConstantTimeEq for Nullifier {
 #[cfg(any(test, feature = "test-dependencies"))]
 #[cfg_attr(docsrs, doc(cfg(feature = "test-dependencies")))]
 pub mod testing {
-    use group::{ff::FromUniformBytes, Group};
+    use group::{Group, ff::FromUniformBytes};
     use pasta_curves::pallas;
     use proptest::collection::vec;
     use proptest::prelude::*;

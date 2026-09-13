@@ -8,16 +8,24 @@
 
 use core::iter;
 
+use crate::once::OnceTable;
 use bitvec::{array::BitArray, order::Lsb0};
 use group::ff::{PrimeField, PrimeFieldBits};
 use pasta_curves::pallas;
 use subtle::{ConstantTimeEq, CtOption};
 
 use crate::{
-    constants::{fixed_bases::NOTE_COMMITMENT_PERSONALIZATION, L_ORCHARD_BASE},
+    constants::{L_ORCHARD_BASE, fixed_bases::NOTE_COMMITMENT_PERSONALIZATION},
     spec::extract_p,
     value::NoteValue,
 };
+
+static NOTE_COMMITMENT_DOMAIN: OnceTable<sinsemilla::CommitDomain> = OnceTable::new();
+
+fn note_commitment_domain() -> &'static sinsemilla::CommitDomain {
+    NOTE_COMMITMENT_DOMAIN
+        .get_or_init(|| sinsemilla::CommitDomain::new(NOTE_COMMITMENT_PERSONALIZATION))
+}
 
 /// The trapdoor for a note commitment.
 #[derive(Clone, Debug)]
@@ -58,7 +66,7 @@ impl NoteCommitment {
         psi: pallas::Base,
         rcm: NoteCommitTrapdoor,
     ) -> CtOption<Self> {
-        let domain = sinsemilla::CommitDomain::new(NOTE_COMMITMENT_PERSONALIZATION);
+        let domain = note_commitment_domain();
         domain
             .commit(
                 iter::empty()

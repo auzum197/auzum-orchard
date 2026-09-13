@@ -1,13 +1,13 @@
 use core::fmt;
 
 use nonempty::NonEmpty;
-use rand::{CryptoRng, RngCore};
+use rand::{CryptoRng, Rng};
 
 use super::Action;
 use crate::{
+    Proof,
     bundle::{Authorization, Authorized, EffectsOnly},
     primitives::redpallas::{self, Binding, SpendAuth},
-    Proof,
 };
 
 impl super::Bundle {
@@ -98,24 +98,25 @@ impl super::Bundle {
             })
             .collect::<Result<_, E>>()?;
 
-        Ok(if let Some(actions) = NonEmpty::from_vec(actions) {
-            let value_balance = i64::try_from(self.value_sum)
-                .ok()
-                .and_then(|v| v.try_into().ok())
-                .ok_or(TxExtractorError::ValueSumOutOfRange)?;
+        Ok(match NonEmpty::from_vec(actions) {
+            Some(actions) => {
+                let value_balance = i64::try_from(self.value_sum)
+                    .ok()
+                    .and_then(|v| v.try_into().ok())
+                    .ok_or(TxExtractorError::ValueSumOutOfRange)?;
 
-            let authorization = bundle_auth(self)?;
+                let authorization = bundle_auth(self)?;
 
-            Some(crate::Bundle::from_parts_unchecked(
-                actions,
-                self.flags,
-                value_balance,
-                self.anchor,
-                authorization,
-                self.bundle_version,
-            ))
-        } else {
-            None
+                Some(crate::Bundle::from_parts_unchecked(
+                    actions,
+                    self.flags,
+                    value_balance,
+                    self.anchor,
+                    authorization,
+                    self.bundle_version,
+                ))
+            }
+            _ => None,
         })
     }
 }
@@ -224,7 +225,7 @@ impl<V> crate::Bundle<Unbound, V> {
     /// Verifies the given sighash with every `spend_auth_sig`, and then binds the bundle.
     ///
     /// Returns `None` if the given sighash does not validate against every `spend_auth_sig`.
-    pub fn apply_binding_signature<R: RngCore + CryptoRng>(
+    pub fn apply_binding_signature<R: Rng + CryptoRng>(
         self,
         sighash: [u8; 32],
         rng: R,

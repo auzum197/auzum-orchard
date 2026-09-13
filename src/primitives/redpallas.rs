@@ -3,13 +3,13 @@
 use core::cmp::{Ord, Ordering, PartialOrd};
 
 use pasta_curves::pallas;
-use rand::{CryptoRng, RngCore};
+use rand::{CryptoRng, Rng};
 
 #[cfg(feature = "std")]
 pub use reddsa::batch;
 
 #[cfg(test)]
-use rand::rngs::OsRng;
+use crate::rng_compat::OsRng;
 
 /// A RedPallas signature type.
 pub trait SigType: reddsa::SigType + private::Sealed {}
@@ -57,7 +57,7 @@ impl SigningKey<SpendAuth> {
 
 impl<T: SigType> SigningKey<T> {
     /// Creates a signature of type `T` on `msg` using this `SigningKey`.
-    pub fn sign<R: RngCore + CryptoRng>(&self, rng: R, msg: &[u8]) -> Signature<T> {
+    pub fn sign<R: Rng + CryptoRng>(&self, rng: R, msg: &[u8]) -> Signature<T> {
         Signature(self.0.sign(rng, msg))
     }
 }
