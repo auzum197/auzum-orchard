@@ -840,4 +840,145 @@ mod tests {
         assert_eq!(get_compact_size(65537), vec![254, 1, 0, 1, 0]);
         assert_eq!(get_compact_size(33554432), vec![254, 0, 0, 0, 2]);
     }
+
+    /// Rebuilds, from their raw fields, the bundles that QED-it/orchard `zsa1` hashes in its
+    /// fixed-digest tests, and checks that this crate computes the same txid and authorizing
+    /// data digests and accepts the same proofs.
+    ///
+    /// The fixed-digest tests above build their bundles from a seeded RNG, so their bundles
+    /// (and digests) depend on the `rand` version; these fixtures do not.
+    #[test]
+    fn digests_match_qedit_reference_bundles() {
+        use crate::{
+            action::Action,
+            bundle::{Authorized, Flags},
+            note::{ExtractedNoteCommitment, Nullifier, TransmittedNoteCiphertext},
+            note_encryption::NoteCiphertextBytes,
+            primitives::redpallas::{Signature, VerificationKey},
+            sighash_kind::{OrchardSig, OrchardSighashKind},
+            value::ValueCommitment,
+            Proof,
+        };
+        use alloc::{string::String, vec::Vec};
+        use nonempty::NonEmpty;
+        use zcash_note_encryption::note_bytes::NoteBytes;
+
+        fn b32(h: &str) -> [u8; 32] {
+            hex::decode(h).unwrap().try_into().unwrap()
+        }
+        let dump = include_str!("../test_vectors/qedit_bundle_digests.txt");
+        let mut checked = 0;
+        for case in dump.split("end\n").filter(|c| !c.trim().is_empty()) {
+            let lines: Vec<&str> = case.lines().filter(|l| !l.starts_with('#')).collect();
+            let name = lines[0].strip_prefix("case ").unwrap();
+            let field = |key: &str| -> Vec<String> {
+                lines
+                    .iter()
+                    .filter_map(|l| l.strip_prefix(&format!("{key} ")).map(String::from))
+                    .collect()
+            };
+            let (version, tx) = match name.split_once('_').unwrap().1 {
+                "orchard_v2" => (BundleVersion::orchard_v2(), TxVersion::V5),
+                "orchard_v3" => (BundleVersion::orchard_v3(), TxVersion::V6),
+                "ironwood_v3" => (BundleVersion::ironwood_v3(), TxVersion::V6),
+                "zsa" => (BundleVersion::zsa(), TxVersion::ZSA),
+                other => panic!("{other}"),
+            };
+            let flags = Flags::from_byte(
+                u8::from_str_radix(&field("flags")[0], 16).unwrap(),
+                version,
+            )
+            .unwrap();
+            let value_balance: i64 = field("value_balance")[0].parse().unwrap();
+            let anchor = Anchor::from_bytes(b32(&field("anchor")[0])).unwrap();
+            let burn: Vec<(AssetBase, NoteValue)> = field("burn")
+                .iter()
+                .map(|l| {
+                    let (a, v) = l.split_once(' ').unwrap();
+                    (
+                        AssetBase::from_bytes(&b32(a)).unwrap(),
+                        NoteValue::from_raw(v.parse().unwrap()),
+                    )
+                })
+                .collect();
+            let expected = &field("digest")[0];
+            let parts: Vec<Vec<Vec<u8>>> = field("action")
+                .iter()
+                .map(|l| l.split(' ').map(|h| hex::decode(h).unwrap()).collect())
+                .collect();
+            let action = |p: &Vec<Vec<u8>>| {
+                (
+                    Nullifier::from_bytes(&p[0].clone().try_into().unwrap()).unwrap(),
+                    VerificationKey::try_from(<[u8; 32]>::try_from(p[1].clone()).unwrap()).unwrap(),
+                    ExtractedNoteCommitment::from_bytes(&p[2].clone().try_into().unwrap()).unwrap(),
+                    TransmittedNoteCiphertext {
+                        epk_bytes: p[3].clone().try_into().unwrap(),
+                        enc_ciphertext: NoteCiphertextBytes::from_slice(&p[4]).unwrap(),
+                        out_ciphertext: p[5].clone().try_into().unwrap(),
+                    },
+                    ValueCommitment::from_bytes(&p[6].clone().try_into().unwrap()).unwrap(),
+                )
+            };
+            let ours: String = if name.starts_with("txid_") {
+                let actions: Vec<_> = parts
+                    .iter()
+                    .map(|p| {
+                        let (nf, rk, cmx, note, cv) = action(p);
+                        Action::from_parts(nf, rk, cmx, note, cv, ()).unwrap()
+                    })
+                    .collect();
+                let bundle: Bundle<crate::bundle::EffectsOnly, i64> = Bundle::from_parts(
+                    NonEmpty::from_vec(actions).unwrap(),
+                    flags,
+                    value_balance,
+                    burn,
+                    anchor,
+                    crate::bundle::EffectsOnly,
+                    version,
+                )
+                .unwrap();
+                hash_bundle_txid_data(&bundle, tx).unwrap().to_hex().as_str().into()
+            } else {
+                let actions: Vec<_> = parts
+                    .iter()
+                    .map(|p| {
+                        let (nf, rk, cmx, note, cv) = action(p);
+                        let sig = OrchardSig::new(
+                            OrchardSighashKind::AllEffecting,
+                            Signature::from(<[u8; 64]>::try_from(p[7].clone()).unwrap()),
+                        );
+                        Action::from_parts(nf, rk, cmx, note, cv, sig).unwrap()
+                    })
+                    .collect();
+                let auth = Authorized::from_parts(
+                    Proof::new(hex::decode(&field("proof")[0]).unwrap()),
+                    OrchardSig::new(
+                        OrchardSighashKind::AllEffecting,
+                        Signature::from(
+                            <[u8; 64]>::try_from(hex::decode(&field("binding")[0]).unwrap()).unwrap(),
+                        ),
+                    ),
+                );
+                let bundle: Bundle<Authorized, i64> = Bundle::from_parts_unchecked(
+                    NonEmpty::from_vec(actions).unwrap(),
+                    flags,
+                    value_balance,
+                    burn,
+                    anchor,
+                    auth,
+                    version,
+                );
+                let vk = crate::cached_test_keys(version.circuit_version()).verifying_key();
+                assert!(bundle.verify_proof(vk).is_ok(), "{name}: QED-it proof rejected");
+                hash_bundle_auth_data(&bundle, tx, test_sighash_info_for_kind)
+                    .unwrap()
+                    .to_hex()
+                    .as_str()
+                    .into()
+            };
+            assert_eq!(&ours, expected, "{name}");
+            checked += 1;
+        }
+        assert_eq!(checked, 8);
+    }
 }
