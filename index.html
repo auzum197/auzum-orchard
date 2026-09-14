@@ -198,6 +198,10 @@ zakura's fork point, so it can be merged. Regenerated deterministically and
 force-updated by <code>scripts/zakura-orchard.sh [zakura-rev] [branch]</code>. <code>just sync</code>
 regenerates it at the pinned monorepo rev below (not at <code>zakura/main</code>, which moves
 ahead of the pin) and reports how many commits the pin is behind.</li>
+<li><strong><code>zsa-rebased</code></strong> (local) — QED-it's <code>zsa1</code> Zcash Shielded Assets delta as one commit on
+<code>zcash-upstream/main</code>, for reading the ZSA change on its own. <code>zsa1</code> has too many
+merges to replay commit by commit; its history is in QED-it/orchard. Not consumed by
+<code>just merge</code>.</li>
 <li><code>zakura-patches</code>, <code>zakura-rebased</code> — <strong>superseded</strong>. They come from an earlier
 rebase-based approach and are kept only for reference until deleted.</li>
 </ul>
