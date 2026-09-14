@@ -24,13 +24,14 @@
 #                     `zakura-*` crates exist in the dependency graph
 #   just pins-apply   rewrite the rev strings in Cargo.toml to the vars below
 #                     (for bumping pins; does not commit)
-#   just check        cargo check matrix: default / zsa / zsa,zsa-circuit
-#   just test         cargo test --lib for default and zsa,zsa-circuit
+#   just check        cargo check --all-targets matrix: default / zsa-issuance /
+#                     all features
+#   just test         cargo test for default features, then with zsa-issuance
 #                     (the circuit tests take several minutes)
 #   just rerere-on    enable git rerere, so a redone/aborted merge replays your
 #                     earlier conflict resolutions
 #
-# Legacy branches `zakura-patches`, `zakura-rebased` and `zsa-rebased` come from
+# Legacy branches `zakura-patches` and `zakura-rebased` come from
 # an earlier rebase-based approach and are superseded; do not use them.
 
 set shell := ["bash", "-uc"]
@@ -275,32 +276,36 @@ pins-apply:
     git --no-pager diff --stat -- Cargo.toml || true
     echo "Cargo.toml rewritten (not committed). Run \`just pins\` to verify."
 
-# cargo check matrix; stops at the first failing configuration.
+# `--all-targets` is deliberate: benches, tests and examples are the first
+# things a merge breaks (a changed call signature lands in `benches/` long
+# before it lands in `src/`), and a bare `cargo check` never compiles them.
+#
+# cargo check --all-targets matrix; stops at the first failing configuration.
 check:
     #!/usr/bin/env bash
     set -euo pipefail
 
     run() {
-        echo "==> cargo check $*"
-        if ! cargo check "$@"; then
-            echo "FAILED: cargo check $*" >&2
+        echo "==> cargo check --all-targets $*"
+        if ! cargo check --all-targets "$@"; then
+            echo "FAILED: cargo check --all-targets $*" >&2
             exit 1
         fi
     }
     run
-    run --features zsa
-    run --features zsa,zsa-circuit
+    run --features zsa-issuance
+    run --all-features
     echo "all check configurations passed"
 
-# Library tests, default and full-ZSA. The circuit tests take several minutes.
+# Tests for default features, then with ZSA issuance. The circuit tests take several minutes.
 test:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    echo "==> cargo test --lib"
-    cargo test --lib
-    echo "==> cargo test --lib --features zsa,zsa-circuit (slow: circuit tests)"
-    cargo test --lib --features zsa,zsa-circuit
+    echo "==> cargo test --release"
+    cargo test --release
+    echo "==> cargo test --release --features zsa-issuance,test-dependencies (slow: proving)"
+    cargo test --release --features zsa-issuance,test-dependencies
 
 # Remember conflict resolutions, so a retried or redone merge replays them.
 rerere-on:
