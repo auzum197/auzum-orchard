@@ -2,7 +2,7 @@
 
 use incrementalmerkletree::{Hashable, Marking, Retention};
 use orchard::{
-    Address, Bundle,
+    Address, Anchor, Bundle, Note,
     builder::{Builder, BundleType},
     bundle::{Authorized, BatchValidator, BundleVersion, Flags, TxVersion},
     circuit::{ProvingKey, VerifyingKey},
@@ -16,7 +16,6 @@ use orchard::{
     sighash_kind::OrchardSighashKind,
     tree::{MerkleHashOrchard, MerklePath},
     value::NoteValue,
-    Anchor, Note,
 };
 use rand::{SeedableRng, rng, rngs::StdRng};
 use shardtree::{ShardTree, store::memory::MemoryShardStore};

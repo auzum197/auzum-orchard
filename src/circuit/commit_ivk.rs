@@ -699,11 +699,11 @@ mod tests {
             primitives::CommitDomain,
         },
         utilities::{
+            UtilitiesInstructions,
             lookup_range_check::{
                 PallasLookupRangeCheck, PallasLookupRangeCheck4_5BConfig,
                 PallasLookupRangeCheckConfig,
             },
-            UtilitiesInstructions,
         },
     };
     use halo2_proofs::{

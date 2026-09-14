@@ -49,9 +49,9 @@ use halo2_gadgets::{
 mod circuit_vanilla;
 mod circuit_zsa;
 
+use circuit_vanilla::CircuitVanilla;
 #[cfg(feature = "multicore")]
 use circuit_vanilla::CircuitWithPreparedMerklePath;
-use circuit_vanilla::CircuitVanilla;
 use circuit_zsa::{AdditionalZsaWitnesses, CircuitZsa};
 
 #[cfg(not(feature = "unstable-voting-circuits"))]
@@ -1118,7 +1118,7 @@ mod tests {
         use pasta_curves::pallas;
 
         use super::super::{
-            plonk, AdditionalZsaWitnesses, Circuit, CircuitVanilla, OrchardCircuitVersion,
+            AdditionalZsaWitnesses, Circuit, CircuitVanilla, OrchardCircuitVersion, plonk,
         };
         use crate::note::AssetBase;
 

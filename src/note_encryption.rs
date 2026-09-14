@@ -6,9 +6,9 @@ use core::fmt;
 use blake2b_simd::{Hash, Params};
 use group::ff::PrimeField;
 use zcash_note_encryption::{
+    AEAD_TAG_SIZE, BatchDomain, Domain, EphemeralKeyBytes, OUT_PLAINTEXT_SIZE, OutPlaintextBytes,
+    OutgoingCipherKey, ShieldedOutput,
     note_bytes::{NoteBytes, NoteBytesData},
-    BatchDomain, Domain, EphemeralKeyBytes, OutPlaintextBytes, OutgoingCipherKey, ShieldedOutput,
-    AEAD_TAG_SIZE, OUT_PLAINTEXT_SIZE,
 };
 
 use crate::{
@@ -965,7 +965,7 @@ pub mod testing {
     };
 
     use super::{
-        CompactAction, CompactNoteCiphertextBytes, NoteEncryptionDomain, OrchardVersion, MEMO_SIZE,
+        CompactAction, CompactNoteCiphertextBytes, MEMO_SIZE, NoteEncryptionDomain, OrchardVersion,
     };
 
     /// Creates a fake `CompactAction` paying the given recipient the specified value.
@@ -1037,11 +1037,11 @@ mod tests {
     };
 
     use super::{
-        COMPACT_NOTE_SIZE_VANILLA, COMPACT_NOTE_SIZE_ZSA, CompactAction, CompactNoteCiphertextBytes,
-        CompactNotePlaintextBytes, DomainVersion, IronwoodDomain, IronwoodNoteEncryption,
-        IronwoodVersion, NoteCiphertextBytes, NoteEncryptionDomain, OrchardDomain,
-        OrchardNoteEncryption, OrchardVersion, ZSADomain, ZSAVersion, compact_note_size,
-        parse_note_plaintext_without_memo, prf_ock_orchard,
+        COMPACT_NOTE_SIZE_VANILLA, COMPACT_NOTE_SIZE_ZSA, CompactAction,
+        CompactNoteCiphertextBytes, CompactNotePlaintextBytes, DomainVersion, IronwoodDomain,
+        IronwoodNoteEncryption, IronwoodVersion, NoteCiphertextBytes, NoteEncryptionDomain,
+        OrchardDomain, OrchardNoteEncryption, OrchardVersion, ZSADomain, ZSAVersion,
+        compact_note_size, parse_note_plaintext_without_memo, prf_ock_orchard,
     };
     use crate::note::AssetBase;
     use crate::{
@@ -1052,9 +1052,9 @@ mod tests {
             IncomingViewingKey, OutgoingViewingKey, PreparedIncomingViewingKey, Scope, SpendingKey,
         },
         note::{
-            testing::{arb_note, arb_zatoshi_note},
             ExtractedNoteCommitment, NoteVersion, Nullifier, RandomSeed, Rho,
             TransmittedNoteCiphertext,
+            testing::{arb_note, arb_zatoshi_note},
         },
         primitives::redpallas,
         value::{NoteValue, ValueCommitTrapdoor, ValueCommitment, ValueSum},
@@ -1456,12 +1456,16 @@ mod tests {
                 .map(|(note, _)| note),
             Some(note_v3)
         );
-        assert!(orchard_domain
-            .parse_note_plaintext_without_memo_ovk(pk_d, &compact_v3)
-            .is_none());
-        assert!(ironwood_domain
-            .parse_note_plaintext_without_memo_ovk(pk_d, &compact_v2)
-            .is_none());
+        assert!(
+            orchard_domain
+                .parse_note_plaintext_without_memo_ovk(pk_d, &compact_v3)
+                .is_none()
+        );
+        assert!(
+            ironwood_domain
+                .parse_note_plaintext_without_memo_ovk(pk_d, &compact_v2)
+                .is_none()
+        );
 
         // V2 and V3 are both Vanilla-shaped, so the pairs above never cross the Vanilla/ZSA buffer
         // boundary. The lead-byte check runs first, so crossing it needs a buffer whose lead byte
@@ -1484,20 +1488,24 @@ mod tests {
                 .try_into()
                 .unwrap(),
         ));
-        assert!(zsa_domain
-            .parse_note_plaintext_without_memo_ovk(pk_d, &truncated)
-            .is_none());
+        assert!(
+            zsa_domain
+                .parse_note_plaintext_without_memo_ovk(pk_d, &truncated)
+                .is_none()
+        );
 
         // Vanilla lead byte, ZSA-sized: Vanilla offsets would parse fine while ignoring the 32
         // trailing bytes where the asset lives.
         let mut padded = [0u8; COMPACT_NOTE_SIZE_ZSA];
         padded[..COMPACT_NOTE_SIZE_VANILLA].copy_from_slice(compact_v2.as_ref());
-        assert!(orchard_domain
-            .parse_note_plaintext_without_memo_ovk(
-                pk_d,
-                &CompactNotePlaintextBytes::Zsa(NoteBytesData(padded))
-            )
-            .is_none());
+        assert!(
+            orchard_domain
+                .parse_note_plaintext_without_memo_ovk(
+                    pk_d,
+                    &CompactNotePlaintextBytes::Zsa(NoteBytesData(padded))
+                )
+                .is_none()
+        );
 
         // The matched ZSA pair still parses, so the length check is not rejecting everything.
         assert_eq!(

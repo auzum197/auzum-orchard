@@ -160,13 +160,13 @@ pub fn validate_bundle_burn(
 #[cfg(test)]
 mod burn_permission_tests {
     use super::validate_burn;
+    use crate::rng_compat::OsRng;
     use crate::{
         bundle::{BundleError, BundleVersion, Flags},
         note::AssetBase,
         value::NoteValue,
     };
     use alloc::vec;
-    use crate::rng_compat::OsRng;
 
     #[test]
     fn burn_needs_both_a_zsa_version_and_the_zsa_flag() {
@@ -201,10 +201,10 @@ mod burn_permission_tests {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{note::NoteVersion, value::NoteValue, Note};
+    use crate::{Note, note::NoteVersion, value::NoteValue};
 
-    use alloc::{collections::BTreeSet, vec::Vec};
     use crate::rng_compat::OsRng;
+    use alloc::{collections::BTreeSet, vec::Vec};
 
     /// Generates a vector of unique random assets.
     fn generate_unique_assets(count: usize) -> Vec<AssetBase> {
@@ -212,10 +212,12 @@ mod tests {
         let mut used = BTreeSet::new();
 
         (0..count)
-            .map(|_| loop {
-                let asset = AssetBase::random(&mut rng);
-                if used.insert(asset) {
-                    break asset;
+            .map(|_| {
+                loop {
+                    let asset = AssetBase::random(&mut rng);
+                    if used.insert(asset) {
+                        break asset;
+                    }
                 }
             })
             .collect()

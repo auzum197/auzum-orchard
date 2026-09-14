@@ -5,7 +5,7 @@ use pasta_curves::pallas;
 use crate::constants::{OrchardCommitDomains, OrchardFixedBases, OrchardHashDomains};
 
 use halo2_gadgets::{
-    ecc::{chip::EccChip, NonIdentityPoint},
+    ecc::{NonIdentityPoint, chip::EccChip},
     sinsemilla::chip::SinsemillaChip,
     utilities::lookup_range_check::PallasLookupRangeCheck,
 };
@@ -131,9 +131,9 @@ pub(in crate::circuit) mod gadgets {
 mod tests {
     use crate::{
         circuit::{
-            gadget::assign_free_advice,
-            value_commit_orchard::{gadgets::value_commit_orchard, ZsaValueCommitParams},
             K,
+            gadget::assign_free_advice,
+            value_commit_orchard::{ZsaValueCommitParams, gadgets::value_commit_orchard},
         },
         constants::{OrchardCommitDomains, OrchardFixedBases, OrchardHashDomains},
         note::AssetBase,
@@ -141,8 +141,8 @@ mod tests {
     };
     use halo2_gadgets::{
         ecc::{
-            chip::{CircuitVersion, EccChip, EccConfig},
             NonIdentityPoint, ScalarFixed,
+            chip::{CircuitVersion, EccChip, EccConfig},
         },
         sinsemilla::chip::{SinsemillaChip, SinsemillaConfig},
         utilities::lookup_range_check::{

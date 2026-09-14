@@ -22,12 +22,12 @@ use pasta_curves::pallas;
 use rand::Rng;
 
 use crate::{
+    Address, Note,
     bundle::commitments::{hash_issue_bundle_auth_data, hash_issue_bundle_txid_data},
     note::{
-        rho_for_issuance_note, AssetBase, AssetId, ExtractedNoteCommitment, NoteVersion, Nullifier,
+        AssetBase, AssetId, ExtractedNoteCommitment, NoteVersion, Nullifier, rho_for_issuance_note,
     },
     value::NoteValue,
-    Address, Note,
 };
 
 use Error::{
@@ -910,7 +910,9 @@ impl fmt::Display for Error {
 
 #[cfg(test)]
 mod tests {
+    use crate::rng_compat::OsRng;
     use crate::{
+        Address, Note,
         issuance::Error::{
             CannotBeFirstIssuance, IncorrectRhoDerivation, InvalidIssueBundleSig,
             InvalidIssueValidatingKey, IssueActionNotFound,
@@ -918,23 +920,22 @@ mod tests {
             IssueBundleIkMismatchAssetBase, MissingReferenceNoteOnFirstIssuance, ValueOverflow,
         },
         issuance::{
+            AssetRecord, AwaitingNullifier, IssuanceFlags, IssueAction, IssueBundle, IssueInfo,
+            Signed,
             auth::{IssueAuthKey, IssueValidatingKey, ZSASchnorr},
             compute_asset_desc_hash, create_reference_note, is_reference_note,
             sighash_kind::{BIP340IssueAuthSig, IssueSighashKind},
-            verify_issue_bundle, AssetRecord, AwaitingNullifier, IssuanceFlags, IssueAction,
-            IssueBundle, IssueInfo, Signed,
+            verify_issue_bundle,
         },
         keys::{FullViewingKey, Scope, SpendingKey},
-        note::{rho_for_issuance_note, AssetBase, AssetId, NoteVersion, Nullifier, Rho},
+        note::{AssetBase, AssetId, NoteVersion, Nullifier, Rho, rho_for_issuance_note},
         value::NoteValue,
-        Address, Note,
     };
     use alloc::collections::{BTreeMap, BTreeSet};
     use alloc::string::{String, ToString};
     use alloc::vec::Vec;
     use nonempty::NonEmpty;
     use pasta_curves::pallas;
-    use crate::rng_compat::OsRng;
     use rand::Rng;
 
     #[test]
@@ -1899,18 +1900,18 @@ mod tests {
     #[cfg(feature = "circuit")]
     fn verify_rho_computation_for_issuance_notes() {
         use crate::{
+            Anchor, Bundle,
             builder::{Builder, BundleType},
             bundle::{BundleVersion, TxVersion},
             circuit::ProvingKey,
             keys::SpendAuthorizingKey,
             note::ExtractedNoteCommitment,
             tree::{MerkleHashOrchard, MerklePath},
-            Anchor, Bundle,
         };
 
         use incrementalmerkletree::{Marking, Retention};
-        use shardtree::store::memory::MemoryShardStore;
         use shardtree::ShardTree;
+        use shardtree::store::memory::MemoryShardStore;
 
         let bundle_version = BundleVersion::zsa();
 
@@ -2081,15 +2082,15 @@ mod tests {
 pub mod testing {
     use crate::{
         issuance::{
-            auth::{
-                testing::arb_issuance_validating_key, IssueAuthSig, IssueAuthSigScheme,
-                IssueValidatingKey, ZSASchnorr,
-            },
-            sighash_kind::IssueSighashKind,
             AwaitingNullifier, BIP340IssueAuthSig, IssuanceFlags, IssueAction, IssueBundle,
             Prepared, Signed,
+            auth::{
+                IssueAuthSig, IssueAuthSigScheme, IssueValidatingKey, ZSASchnorr,
+                testing::arb_issuance_validating_key,
+            },
+            sighash_kind::IssueSighashKind,
         },
-        note::{testing::arb_zsa_note, NoteVersion},
+        note::{NoteVersion, testing::arb_zsa_note},
     };
     use nonempty::NonEmpty;
     use proptest::collection::vec;

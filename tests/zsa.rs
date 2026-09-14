@@ -6,23 +6,23 @@ use crate::builder::verify_bundle;
 use incrementalmerkletree::{Hashable, Marking, Retention};
 use nonempty::NonEmpty;
 use orchard::{
+    Address, Anchor, Bundle, Note,
     builder::{BuildError, Builder, BundleType},
-    bundle::{burn_validation::BurnError, Authorized, BundleVersion, Flags, TxVersion},
+    bundle::{Authorized, BundleVersion, Flags, TxVersion, burn_validation::BurnError},
     circuit::{ProvingKey, VerifyingKey},
     issuance::{
+        AwaitingNullifier, IssueBundle, IssueInfo, ReferenceKeys, Signed,
         auth::{IssueAuthKey, IssueValidatingKey, ZSASchnorr},
-        compute_asset_desc_hash, verify_issue_bundle, AwaitingNullifier, IssueBundle, IssueInfo,
-        ReferenceKeys, Signed,
+        compute_asset_desc_hash, verify_issue_bundle,
     },
     keys::{FullViewingKey, PreparedIncomingViewingKey, Scope, SpendAuthorizingKey, SpendingKey},
     note::{AssetBase, AssetId, ExtractedNoteCommitment, Nullifier},
     note_encryption::ZSADomain,
     tree::{MerkleHashOrchard, MerklePath},
     value::NoteValue,
-    Address, Anchor, Bundle, Note,
 };
 use rand::{rand_core::UnwrapErr, rngs::SysRng};
-use shardtree::{store::memory::MemoryShardStore, ShardTree};
+use shardtree::{ShardTree, store::memory::MemoryShardStore};
 use std::collections::HashSet;
 use zcash_note_encryption::try_note_decryption;
 
@@ -170,15 +170,17 @@ fn issue_zsa_notes(
         &mut rng,
     );
 
-    assert!(awaiting_nullifier_bundle
-        .add_recipient(
-            asset_desc_hash,
-            keys.recipient,
-            NoteValue::from_raw(2),
-            false,
-            &mut rng,
-        )
-        .is_ok());
+    assert!(
+        awaiting_nullifier_bundle
+            .add_recipient(
+                asset_desc_hash,
+                keys.recipient,
+                NoteValue::from_raw(2),
+                false,
+                &mut rng,
+            )
+            .is_ok()
+    );
 
     let issue_bundle =
         sign_issue_bundle(awaiting_nullifier_bundle, keys.isk(), first_nullifier, rng);
@@ -194,13 +196,15 @@ fn issue_zsa_notes(
         AssetBase::custom(&AssetId::new_v0(keys.ik(), &asset_desc_hash)),
     );
 
-    assert!(verify_issue_bundle(
-        &issue_bundle,
-        issue_bundle.commitment().into(),
-        |_| None,
-        first_nullifier
-    )
-    .is_ok());
+    assert!(
+        verify_issue_bundle(
+            &issue_bundle,
+            issue_bundle.commitment().into(),
+            |_| None,
+            first_nullifier
+        )
+        .is_ok()
+    );
 
     (*reference_note, *note1, *note2)
 }

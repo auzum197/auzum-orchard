@@ -1562,9 +1562,9 @@ pub(crate) mod tests {
         Action, Authorized, Bundle, BundleError, BundleVersion, CommitmentError, Flags, TxVersion,
     };
     use crate::{
-        note_encryption::{NoteCiphertextBytes, ENC_CIPHERTEXT_SIZE_ZSA},
-        sighash_kind::test_sighash_info_for_kind,
         Proof,
+        note_encryption::{ENC_CIPHERTEXT_SIZE_ZSA, NoteCiphertextBytes},
+        sighash_kind::test_sighash_info_for_kind,
     };
 
     #[cfg(feature = "circuit")]

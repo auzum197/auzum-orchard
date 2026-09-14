@@ -57,7 +57,10 @@ fn creates_and_verifies_proof_individually_and_in_batch() {
 
     assert!(matches!(bundle.verify_proof(&verifying_key), Ok(())));
     for action in bundle.actions() {
-        assert_eq!(action.rk().verify(&sighash, action.authorization().sig()), Ok(()));
+        assert_eq!(
+            action.rk().verify(&sighash, action.authorization().sig()),
+            Ok(())
+        );
     }
     let binding_validating_key = bundle.binding_validating_key();
     assert_eq!(

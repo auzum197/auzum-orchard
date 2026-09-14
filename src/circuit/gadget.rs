@@ -3,13 +3,13 @@
 use ff::Field;
 use pasta_curves::pallas;
 
-use super::{commit_ivk::CommitIvkChip, note_commit::NoteCommitChip, Config};
+use super::{Config, commit_ivk::CommitIvkChip, note_commit::NoteCommitChip};
 use crate::{
     constants::{OrchardCommitDomains, OrchardFixedBases, OrchardHashDomains},
     note::AssetBase,
 };
 use halo2_gadgets::{
-    ecc::{chip::EccChip, CircuitVersion},
+    ecc::{CircuitVersion, chip::EccChip},
     poseidon::Pow5Chip as PoseidonChip,
     sinsemilla::{chip::SinsemillaChip, merkle::chip::MerkleChip},
     utilities::{cond_swap::CondSwapChip, lookup_range_check::PallasLookupRangeCheck},

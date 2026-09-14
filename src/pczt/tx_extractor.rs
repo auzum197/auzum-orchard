@@ -109,7 +109,7 @@ impl super::Bundle {
                 .and_then(|v| v.try_into().ok())
                 .ok_or(TxExtractorError::ValueSumOutOfRange)?;
 
-                let authorization = bundle_auth(self)?;
+            let authorization = bundle_auth(self)?;
 
             Some(crate::Bundle::from_parts_unchecked(
                 actions,

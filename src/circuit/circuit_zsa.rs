@@ -15,22 +15,22 @@ use halo2_gadgets::{
 };
 
 use halo2_proofs::{
-    circuit::{floor_planner, Layouter, Value},
+    circuit::{Layouter, Value, floor_planner},
     plonk::{self, Advice, Column, Constraints, Expression, Selector},
     poly::Rotation,
 };
 
 use crate::{
     circuit::{
+        ANCHOR, AddressPoints, CMX, CV_NET_X, CV_NET_Y, CircuitVanilla, Config,
+        DISABLE_CROSS_ADDRESS, ENABLE_OUTPUT, ENABLE_SPEND, ENABLE_ZSA, NF_OLD,
+        OrchardCircuitVersion, RK_X, RK_Y,
         commit_ivk::gadgets::commit_ivk,
         configure_circuit,
-        derive_nullifier::{gadgets::derive_nullifier, ZsaNullifierParams},
+        derive_nullifier::{ZsaNullifierParams, gadgets::derive_nullifier},
         gadget::{assign_free_advice, assign_is_zatoshi_asset, assign_split_flag},
-        note_commit::{gadgets::note_commit, ZsaNoteCommitParams},
-        value_commit_orchard::{gadgets::value_commit_orchard, ZsaValueCommitParams},
-        AddressPoints, CircuitVanilla, Config, OrchardCircuitVersion, ANCHOR, CMX, CV_NET_X,
-        CV_NET_Y, DISABLE_CROSS_ADDRESS, ENABLE_OUTPUT, ENABLE_SPEND, ENABLE_ZSA, NF_OLD, RK_X,
-        RK_Y,
+        note_commit::{ZsaNoteCommitParams, gadgets::note_commit},
+        value_commit_orchard::{ZsaValueCommitParams, gadgets::value_commit_orchard},
     },
     constants::{OrchardFixedBasesFull, OrchardHashDomains},
     note::AssetBase,
@@ -1064,25 +1064,25 @@ fn synthesize_cross_address_checks(
 
 #[cfg(test)]
 mod tests {
+    use crate::rng_compat::OsRng;
     use alloc::vec::Vec;
     use core::iter;
     use ff::Field;
     use group::{Curve, Group, GroupEncoding};
     use halo2_proofs::{circuit::Value, dev::MockProver};
     use pasta_curves::pallas;
-    use crate::rng_compat::OsRng;
     use rand::{CryptoRng, Rng};
     use subtle::{Choice, CtOption};
 
     use crate::{
         builder::SpendInfo,
         bundle::Flags,
-        circuit::{Circuit, Instance, Proof, ProvingKey, VerifyingKey, K},
+        circuit::{Circuit, Instance, K, Proof, ProvingKey, VerifyingKey},
         circuit_version::OrchardCircuitVersion,
         keys::{FullViewingKey, Scope, SpendValidatingKey, SpendingKey},
         note::{
-            commitment::NoteCommitTrapdoor, AssetBase, Note, NoteCommitment, NoteVersion,
-            Nullifier, RandomSeed, Rho,
+            AssetBase, Note, NoteCommitment, NoteVersion, Nullifier, RandomSeed, Rho,
+            commitment::NoteCommitTrapdoor,
         },
         primitives::redpallas::VerificationKey,
         tree::MerklePath,

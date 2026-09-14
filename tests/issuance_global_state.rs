@@ -7,19 +7,20 @@ use nonempty::NonEmpty;
 use rand::{Rng, rand_core::UnwrapErr, rngs::SysRng};
 
 use orchard::{
+    Address, Note,
     issuance::{
-        auth::{IssueAuthKey, IssueValidatingKey, ZSASchnorr},
-        compute_asset_desc_hash, verify_issue_bundle, AssetRecord,
+        AssetRecord,
         Error::{
             IssueActionPreviouslyFinalizedAssetBase, MissingReferenceNoteOnFirstIssuance,
             ValueOverflow,
         },
         IssueBundle, IssueInfo, Signed,
+        auth::{IssueAuthKey, IssueValidatingKey, ZSASchnorr},
+        compute_asset_desc_hash, verify_issue_bundle,
     },
     keys::{FullViewingKey, Scope, SpendingKey},
     note::{AssetBase, AssetId, Nullifier},
     value::NoteValue,
-    Address, Note,
 };
 
 /// The OS RNG as an infallible `Copy` RNG, which these tests pass by value.
@@ -43,7 +44,7 @@ struct TestParams {
 
 // For testing global state only - should not be used in an actual setting.
 fn setup_params() -> TestParams {
-    use group::{ff::PrimeField, Curve, Group};
+    use group::{Curve, Group, ff::PrimeField};
     use pasta_curves::{arithmetic::CurveAffine, pallas};
 
     let mut rng = UnwrapErr(SysRng);

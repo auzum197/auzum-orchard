@@ -518,7 +518,7 @@ mod tests {
         testing::{arb_note_value_bounded, arb_trapdoor, arb_value_sum_bounded},
     };
     use crate::{
-        note::asset_base::testing::arb_asset_base, note::AssetBase, primitives::redpallas,
+        note::AssetBase, note::asset_base::testing::arb_asset_base, primitives::redpallas,
         value::NoteValue,
     };
 

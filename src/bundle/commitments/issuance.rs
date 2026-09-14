@@ -5,7 +5,7 @@ use blake2b_simd::Hash as Blake2bHash;
 
 use crate::{
     bundle::commitments::{get_compact_size, hasher},
-    issuance::{sighash_kind::IssueSighashKind, IssueAuth, IssueBundle, Signed},
+    issuance::{IssueAuth, IssueBundle, Signed, sighash_kind::IssueSighashKind},
 };
 
 const ZCASH_ORCHARD_ZSA_ISSUE_PERSONALIZATION: &[u8; 16] = b"ZTxIdSAIssueHash";
@@ -88,17 +88,17 @@ mod tests {
     use super::*;
     use crate::{
         issuance::{
+            AwaitingSighash, IssueInfo,
             auth::{IssueAuthKey, IssueValidatingKey, ZSASchnorr},
             compute_asset_desc_hash,
             sighash_kind::test_sighash_info_for_kind,
-            AwaitingSighash, IssueInfo,
         },
         keys::{FullViewingKey, Scope, SpendingKey},
         note::Nullifier,
         value::NoteValue,
     };
     use nonempty::NonEmpty;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
 
     fn generate_issue_bundle() -> (IssueBundle<AwaitingSighash>, IssueAuthKey<ZSASchnorr>) {
         let mut rng = StdRng::seed_from_u64(5);

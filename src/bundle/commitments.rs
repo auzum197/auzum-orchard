@@ -537,19 +537,19 @@ pub fn get_compact_size(size: usize) -> Vec<u8> {
 #[cfg(all(test, feature = "circuit"))]
 mod tests {
     use crate::{
+        Anchor,
         builder::{Builder, BundleType, UnauthorizedBundle},
         bundle::{
-            commitments::{get_compact_size, hash_bundle_auth_data, hash_bundle_txid_data},
             Authorized, Bundle, BundleVersion, TxVersion,
+            commitments::{get_compact_size, hash_bundle_auth_data, hash_bundle_txid_data},
         },
         circuit::ProvingKey,
         keys::{FullViewingKey, Scope, SpendAuthorizingKey, SpendingKey},
         note::AssetBase,
         sighash_kind::test_sighash_info_for_kind,
         value::NoteValue,
-        Anchor,
     };
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
 
     fn generate_bundle(bundle_version: BundleVersion) -> UnauthorizedBundle<i64> {
         let rng = StdRng::seed_from_u64(5);
@@ -850,6 +850,7 @@ mod tests {
     #[test]
     fn digests_match_qedit_reference_bundles() {
         use crate::{
+            Proof,
             action::Action,
             bundle::{Authorized, Flags},
             note::{ExtractedNoteCommitment, Nullifier, TransmittedNoteCiphertext},
@@ -857,7 +858,6 @@ mod tests {
             primitives::redpallas::{Signature, VerificationKey},
             sighash_kind::{OrchardSig, OrchardSighashKind},
             value::ValueCommitment,
-            Proof,
         };
         use alloc::{string::String, vec::Vec};
         use nonempty::NonEmpty;
@@ -884,11 +884,9 @@ mod tests {
                 "zsa" => (BundleVersion::zsa(), TxVersion::ZSA),
                 other => panic!("{other}"),
             };
-            let flags = Flags::from_byte(
-                u8::from_str_radix(&field("flags")[0], 16).unwrap(),
-                version,
-            )
-            .unwrap();
+            let flags =
+                Flags::from_byte(u8::from_str_radix(&field("flags")[0], 16).unwrap(), version)
+                    .unwrap();
             let value_balance: i64 = field("value_balance")[0].parse().unwrap();
             let anchor = Anchor::from_bytes(b32(&field("anchor")[0])).unwrap();
             let burn: Vec<(AssetBase, NoteValue)> = field("burn")
@@ -937,7 +935,11 @@ mod tests {
                     version,
                 )
                 .unwrap();
-                hash_bundle_txid_data(&bundle, tx).unwrap().to_hex().as_str().into()
+                hash_bundle_txid_data(&bundle, tx)
+                    .unwrap()
+                    .to_hex()
+                    .as_str()
+                    .into()
             } else {
                 let actions: Vec<_> = parts
                     .iter()
@@ -955,7 +957,8 @@ mod tests {
                     OrchardSig::new(
                         OrchardSighashKind::AllEffecting,
                         Signature::from(
-                            <[u8; 64]>::try_from(hex::decode(&field("binding")[0]).unwrap()).unwrap(),
+                            <[u8; 64]>::try_from(hex::decode(&field("binding")[0]).unwrap())
+                                .unwrap(),
                         ),
                     ),
                 );
@@ -969,7 +972,10 @@ mod tests {
                     version,
                 );
                 let vk = crate::cached_test_keys(version.circuit_version()).verifying_key();
-                assert!(bundle.verify_proof(vk).is_ok(), "{name}: QED-it proof rejected");
+                assert!(
+                    bundle.verify_proof(vk).is_ok(),
+                    "{name}: QED-it proof rejected"
+                );
                 hash_bundle_auth_data(&bundle, tx, test_sighash_info_for_kind)
                     .unwrap()
                     .to_hex()

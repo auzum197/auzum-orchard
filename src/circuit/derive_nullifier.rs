@@ -23,10 +23,10 @@ pub(in crate::circuit) mod gadgets {
         constants::{NullifierK, OrchardFixedBases},
     };
     use halo2_gadgets::{
-        ecc::{chip::EccPoint, EccInstructions, FixedPointBaseField, Point, X},
+        ecc::{EccInstructions, FixedPointBaseField, Point, X, chip::EccPoint},
         poseidon::{
-            primitives::{self as poseidon, ConstantLength},
             Hash as PoseidonHash, PoseidonSpongeInstructions,
+            primitives::{self as poseidon, ConstantLength},
         },
     };
     use halo2_proofs::{circuit::Layouter, plonk};
@@ -40,11 +40,11 @@ pub(in crate::circuit) mod gadgets {
         PoseidonChip: PoseidonSpongeInstructions<pallas::Base, poseidon::P128Pow5T3, ConstantLength<2>, 3, 2>,
         AddChip: AddInstruction<pallas::Base>,
         EccChip: EccInstructions<
-            pallas::Affine,
-            FixedPoints = OrchardFixedBases,
-            Point = EccPoint,
-            Var = AssignedCell<pallas::Base, pallas::Base>,
-        >,
+                pallas::Affine,
+                FixedPoints = OrchardFixedBases,
+                Point = EccPoint,
+                Var = AssignedCell<pallas::Base, pallas::Base>,
+            >,
     >(
         mut layouter: impl Layouter<pallas::Base>,
         poseidon_chip: PoseidonChip,
@@ -121,23 +121,23 @@ pub(in crate::circuit) mod gadgets {
 mod tests {
     use crate::{
         circuit::{
-            derive_nullifier::{gadgets::derive_nullifier, ZsaNullifierParams},
+            K,
+            derive_nullifier::{ZsaNullifierParams, gadgets::derive_nullifier},
             gadget::{
                 add_chip::{AddChip, AddConfig},
                 assign_free_advice, assign_split_flag,
             },
-            K,
         },
         constants::{OrchardCommitDomains, OrchardFixedBases, OrchardHashDomains},
         keys::NullifierDerivingKey,
-        note::{commitment::NoteCommitment, Note, NoteVersion, Nullifier},
+        note::{Note, NoteVersion, Nullifier, commitment::NoteCommitment},
     };
     use halo2_gadgets::{
         ecc::{
-            chip::{CircuitVersion, EccChip, EccConfig},
             Point,
+            chip::{CircuitVersion, EccChip, EccConfig},
         },
-        poseidon::{primitives as poseidon, Pow5Chip, Pow5Config},
+        poseidon::{Pow5Chip, Pow5Config, primitives as poseidon},
         sinsemilla::chip::{SinsemillaChip, SinsemillaConfig},
         utilities::{
             cond_swap::{CondSwapChip, CondSwapConfig},
@@ -145,6 +145,7 @@ mod tests {
         },
     };
 
+    use crate::rng_compat::OsRng;
     use group::Curve;
     use halo2_proofs::{
         circuit::{Layouter, SimpleFloorPlanner, Value},
@@ -152,7 +153,6 @@ mod tests {
         plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance},
     };
     use pasta_curves::pallas;
-    use crate::rng_compat::OsRng;
     use subtle::Choice;
 
     /// Checks that the `derive_nullifier` gadget agrees with `Nullifier::derive`.

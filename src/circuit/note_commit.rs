@@ -30,8 +30,7 @@ use halo2_gadgets::{
         chip::{SinsemillaChip, SinsemillaConfig},
     },
     utilities::{
-        FieldValue, RangeConstrained, bool_check,
-        cond_swap::CondSwapChip,
+        FieldValue, RangeConstrained, bool_check, cond_swap::CondSwapChip,
         lookup_range_check::PallasLookupRangeCheck,
     },
 };
@@ -1952,10 +1951,15 @@ pub(in crate::circuit) mod gadgets {
         rcm: ScalarFixed<pallas::Affine, EccChip<OrchardFixedBases, Lookup>>,
         zsa_params: Option<ZsaNoteCommitParams>,
     ) -> Result<Point<pallas::Affine, EccChip<OrchardFixedBases, Lookup>>, Error> {
-        match (&zsa_params, &note_commit_chip.config.specific_config_for_circuit) {
-            (Some(_), SpecificConfigForCircuit::Zsa(_)) => {},
-            (None, SpecificConfigForCircuit::Vanilla(_)) => {},
-            _ => panic!("ZSA parameters must be provided for ZSA circuits, and must not be provided for vanilla circuits"),
+        match (
+            &zsa_params,
+            &note_commit_chip.config.specific_config_for_circuit,
+        ) {
+            (Some(_), SpecificConfigForCircuit::Zsa(_)) => {}
+            (None, SpecificConfigForCircuit::Vanilla(_)) => {}
+            _ => panic!(
+                "ZSA parameters must be provided for ZSA circuits, and must not be provided for vanilla circuits"
+            ),
         }
 
         let lookup_config = chip.config().lookup_config();
@@ -2310,7 +2314,9 @@ pub(in crate::circuit) mod gadgets {
                     zsa_decomposition.h_2_zsa.clone(),
                 )?
             }
-            _ => panic!("zsa_decomposition is required with a ZSA configuration but must be omitted with a Vanilla configuration."),
+            _ => panic!(
+                "zsa_decomposition is required with a ZSA configuration but must be omitted with a Vanilla configuration."
+            ),
         };
 
         cfg.g_d
@@ -2643,7 +2649,7 @@ mod tests {
             L_ORCHARD_BASE, L_VALUE, OrchardCommitDomains, OrchardFixedBases, OrchardHashDomains,
             T_Q, fixed_bases::NOTE_COMMITMENT_PERSONALIZATION,
         },
-        note::{commitment::NoteCommitTrapdoor, AssetBase, NoteCommitment},
+        note::{AssetBase, NoteCommitment, commitment::NoteCommitTrapdoor},
         value::NoteValue,
     };
     use halo2_gadgets::{
@@ -2669,7 +2675,7 @@ mod tests {
         dev::MockProver,
         plonk::{Circuit, ConstraintSystem, Error},
     };
-    use pasta_curves::{arithmetic::CurveAffine, pallas, EpAffine};
+    use pasta_curves::{EpAffine, arithmetic::CurveAffine, pallas};
 
     use rand::Rng;
 

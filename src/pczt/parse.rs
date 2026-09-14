@@ -7,7 +7,7 @@ use alloc::vec::Vec;
 use ff::PrimeField;
 use incrementalmerkletree::Hashable;
 use pasta_curves::pallas;
-use zcash_note_encryption::{note_bytes::NoteBytes, OutgoingCipherKey};
+use zcash_note_encryption::{OutgoingCipherKey, note_bytes::NoteBytes};
 use zip32::ChildIndex;
 
 use super::{Action, Bundle, Output, Spend, Zip32Derivation};
@@ -18,7 +18,7 @@ use crate::{
     note::{
         ExtractedNoteCommitment, NoteVersion, Nullifier, RandomSeed, Rho, TransmittedNoteCiphertext,
     },
-    note_encryption::{enc_ciphertext_size, NoteCiphertextBytes},
+    note_encryption::{NoteCiphertextBytes, enc_ciphertext_size},
     primitives::redpallas::{self, SpendAuth},
     tree::{MerkleHashOrchard, MerklePath},
     value::{NoteValue, Sign, ValueCommitTrapdoor, ValueCommitment, ValueSum},

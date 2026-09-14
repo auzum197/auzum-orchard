@@ -14,8 +14,8 @@ use crate::{
     Proof,
     address::Address,
     bundle::{
-        burn_validation::{validate_burn_entry, BurnError},
         Authorization, Authorized, Bundle, BundleVersion, Flags, TxVersion,
+        burn_validation::{BurnError, validate_burn_entry},
     },
     keys::{
         FullViewingKey, OutgoingViewingKey, Scope, SpendAuthorizingKey, SpendValidatingKey,
@@ -26,7 +26,7 @@ use crate::{
         TransmittedNoteCiphertext,
     },
     note_encryption::{
-        enc_ciphertext_size, NoteCiphertextBytes, NoteEncryptionDomain, OrchardVersion,
+        NoteCiphertextBytes, NoteEncryptionDomain, OrchardVersion, enc_ciphertext_size,
     },
     primitives::redpallas::{self, Binding, SpendAuth},
     rng_compat::RngCore06,
@@ -3040,18 +3040,20 @@ mod tests {
         ));
 
         // Spends-disabled flags are accepted.
-        assert!(Builder::new(
-            BundleType::Coinbase,
-            bundle_version,
-            Flags::from_parts(
-                false,
-                true,
-                bundle_version.permits_cross_address_transfers(),
-                false,
-            ),
-            anchor,
-        )
-        .is_ok());
+        assert!(
+            Builder::new(
+                BundleType::Coinbase,
+                bundle_version,
+                Flags::from_parts(
+                    false,
+                    true,
+                    bundle_version.permits_cross_address_transfers(),
+                    false,
+                ),
+                anchor,
+            )
+            .is_ok()
+        );
     }
 
     #[test]
@@ -3179,9 +3181,11 @@ mod tests {
         )
         .unwrap();
 
-        assert!(builder
-            .add_burn(AssetBase::random(&mut rng), NoteValue::from_raw(1))
-            .is_ok());
+        assert!(
+            builder
+                .add_burn(AssetBase::random(&mut rng), NoteValue::from_raw(1))
+                .is_ok()
+        );
     }
 
     #[test]
@@ -3555,18 +3559,20 @@ mod tests {
             mismatched_note_version,
         );
         let spend = SpendInfo::new(fvk.clone(), note, merkle_path).unwrap();
-        assert!(bundle::<i64>(
-            &mut rng,
-            BundleType::DEFAULT,
-            bundle_version,
-            bundle_version.default_flags(),
-            anchor,
-            vec![spend],
-            vec![],
-            vec![],
-            BTreeMap::new(),
-        )
-        .is_ok());
+        assert!(
+            bundle::<i64>(
+                &mut rng,
+                BundleType::DEFAULT,
+                bundle_version,
+                bundle_version.default_flags(),
+                anchor,
+                vec![spend],
+                vec![],
+                vec![],
+                BTreeMap::new(),
+            )
+            .is_ok()
+        );
 
         let output = OutputInfo::new(
             None,

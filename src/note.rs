@@ -11,9 +11,9 @@ use rand::Rng;
 use subtle::{Choice, ConditionallySelectable, CtOption};
 
 use crate::{
-    note_encryption::NoteCiphertextBytes,
     Address,
     keys::{EphemeralSecretKey, FullViewingKey, Scope, SpendingKey},
+    note_encryption::NoteCiphertextBytes,
     spec::{NonIdentityPallasPoint, NonZeroPallasScalar, PrfExpand, to_base, to_scalar},
     value::NoteValue,
 };
@@ -725,8 +725,8 @@ pub mod testing {
 
     use crate::{
         address::testing::arb_address,
-        note::{asset_base::testing::arb_asset_base, nullifier::testing::arb_nullifier, AssetBase},
-        value::{testing::arb_note_value, NoteValue},
+        note::{AssetBase, asset_base::testing::arb_asset_base, nullifier::testing::arb_nullifier},
+        value::{NoteValue, testing::arb_note_value},
     };
 
     #[cfg(feature = "zsa-issuance")]

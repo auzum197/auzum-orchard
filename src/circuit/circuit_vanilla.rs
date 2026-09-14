@@ -1266,14 +1266,16 @@ mod tests {
 
         let strategy = SingleVerifier::new(&vk.params);
         let mut transcript = Blake2bRead::init(&proof_bytes[..]);
-        assert!(super::plonk::verify_proof(
-            &vk.params,
-            &vk.vk,
-            strategy,
-            &raw_instances,
-            &mut transcript,
-        )
-        .is_ok());
+        assert!(
+            super::plonk::verify_proof(
+                &vk.params,
+                &vk.vk,
+                strategy,
+                &raw_instances,
+                &mut transcript,
+            )
+            .is_ok()
+        );
 
         assert!(matches!(
             Proof::create(

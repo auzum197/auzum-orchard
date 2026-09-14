@@ -25,12 +25,12 @@ use core::{
 };
 
 use rand::{CryptoRng, Rng};
-use secp256k1::{schnorr, Keypair, Message, Secp256k1, SecretKey, XOnlyPublicKey};
+use secp256k1::{Keypair, Message, Secp256k1, SecretKey, XOnlyPublicKey, schnorr};
 
 use crate::issuance::Error;
 
 pub use ::zip32::{
-    hardened_only, hardened_only::HardenedOnlyKey, AccountId, ChildIndex, DiversifierIndex, Scope,
+    AccountId, ChildIndex, DiversifierIndex, Scope, hardened_only, hardened_only::HardenedOnlyKey,
 };
 use zcash_spec::{PrfExpand, VariableLengthSlice};
 

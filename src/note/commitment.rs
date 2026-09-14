@@ -54,7 +54,11 @@ impl NoteZsaCommitDomain {
     }
 
     /// $\mathsf{SinsemillaCommit}$, with complete addition for the blinding factor.
-    fn commit(&self, msg: impl Iterator<Item = bool>, r: &pallas::Scalar) -> CtOption<pallas::Point> {
+    fn commit(
+        &self,
+        msg: impl Iterator<Item = bool>,
+        r: &pallas::Scalar,
+    ) -> CtOption<pallas::Point> {
         self.m.hash_to_point(msg).map(|p| p + self.r * r)
     }
 }
