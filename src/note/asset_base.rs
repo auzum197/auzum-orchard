@@ -6,7 +6,7 @@ use subtle::{Choice, ConstantTimeEq, CtOption};
 use crate::constants::zatoshi_asset_base::zatoshi_asset_base;
 
 #[cfg(test)]
-use rand::{CryptoRng, Rng};
+use rand::CryptoRng;
 
 #[cfg(feature = "zsa-issuance")]
 use {
@@ -160,7 +160,7 @@ impl AssetBase {
     ///
     /// This is only used in tests.
     #[cfg(test)]
-    pub(crate) fn random(rng: &mut (impl Rng + CryptoRng)) -> Self {
+    pub(crate) fn random(rng: &mut impl CryptoRng) -> Self {
         loop {
             let random_point = pallas::Point::random(&mut *rng);
             // Extremely unlikely, but we explicitly reject the identity point.

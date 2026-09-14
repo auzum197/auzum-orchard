@@ -233,7 +233,7 @@ fn bundle_chain<FL: BundleOrchardFlavor>() -> ([u8; 32], [u8; 32]) {
             .commitment(FL::TX_VERSION)
             .expect("bundle flags are representable in this format")
             .into();
-        let proven = unauthorized.create_proof(&pk, &mut rng).unwrap();
+        let proven = unauthorized.create_proof(pk, &mut rng).unwrap();
         (
             proven.apply_signatures(&mut rng, sighash, &[]).unwrap(),
             sighash,
@@ -241,7 +241,7 @@ fn bundle_chain<FL: BundleOrchardFlavor>() -> ([u8; 32], [u8; 32]) {
     };
 
     // Verify the shielding bundle.
-    verify_bundle(&shielding_bundle, &vk, FL::TX_VERSION, true);
+    verify_bundle(&shielding_bundle, vk, FL::TX_VERSION, true);
 
     let note = {
         let ivk = PreparedIncomingViewingKey::new(&fvk.to_ivk(Scope::External));
@@ -302,7 +302,7 @@ fn bundle_chain<FL: BundleOrchardFlavor>() -> ([u8; 32], [u8; 32]) {
             .commitment(FL::TX_VERSION)
             .expect("bundle flags are representable in this format")
             .into();
-        let proven = unauthorized.create_proof(&pk, &mut rng).unwrap();
+        let proven = unauthorized.create_proof(pk, &mut rng).unwrap();
         (
             proven
                 .apply_signatures(rng, sighash, &[SpendAuthorizingKey::from(&sk)])
@@ -312,7 +312,7 @@ fn bundle_chain<FL: BundleOrchardFlavor>() -> ([u8; 32], [u8; 32]) {
     };
 
     // Verify the shielded bundle.
-    verify_bundle(&shielded_bundle, &vk, FL::TX_VERSION, true);
+    verify_bundle(&shielded_bundle, vk, FL::TX_VERSION, true);
     (orchard_digest_1, orchard_digest_2)
 }
 
@@ -387,8 +387,8 @@ fn builder_builds_for_insecure_circuit_version() {
     let proven = unauthorized.create_proof(insecure_pk, &mut rng).unwrap();
     let bundle = proven.apply_signatures(&mut rng, sighash, &[]).unwrap();
 
-    assert!(matches!(bundle.verify_proof(&insecure_vk), Ok(())));
-    assert!(bundle.verify_proof(&fixed_vk).is_err());
+    assert!(matches!(bundle.verify_proof(insecure_vk), Ok(())));
+    assert!(bundle.verify_proof(fixed_vk).is_err());
 }
 
 #[test]
@@ -414,10 +414,10 @@ fn builder_builds_for_post_nu6_3_circuit_version() {
         .commitment(TxVersion::V6)
         .expect("bundle flags are representable in this format")
         .into();
-    let proven = unauthorized.create_proof(&post_nu6_3_pk, &mut rng).unwrap();
+    let proven = unauthorized.create_proof(post_nu6_3_pk, &mut rng).unwrap();
     let bundle = proven.apply_signatures(rng, sighash, &[]).unwrap();
 
-    verify_bundle(&bundle, &post_nu6_3_vk, TxVersion::V6, true);
+    verify_bundle(&bundle, post_nu6_3_vk, TxVersion::V6, true);
 }
 
 #[test]
@@ -542,7 +542,7 @@ fn post_nu6_3_coinbase_bundle_proves_and_verifies() {
     let proven = unauthorized.create_proof(post_nu6_3_pk, &mut rng).unwrap();
     let bundle = proven.apply_signatures(&mut rng, sighash, &[]).unwrap();
 
-    verify_bundle(&bundle, &post_nu6_3_vk, TxVersion::V6, true);
+    verify_bundle(&bundle, post_nu6_3_vk, TxVersion::V6, true);
 }
 
 // An explicitly unpadded transactional bundle builds exactly the requested
@@ -669,8 +669,8 @@ fn post_nu6_3_restricted_bundle_chain() {
     };
 
     assert_eq!(restricted_bundle.value_balance(), &2000);
-    verify_bundle(&restricted_bundle, &post_nu6_3_vk, TxVersion::V5, true);
-    assert!(restricted_bundle.verify_proof(&fixed_vk).is_err());
+    verify_bundle(&restricted_bundle, post_nu6_3_vk, TxVersion::V5, true);
+    assert!(restricted_bundle.verify_proof(fixed_vk).is_err());
 
     let mut validator = BatchValidator::new(post_nu6_3_vk);
     validator
@@ -782,5 +782,5 @@ fn ironwood_post_nu6_3_unrestricted_bundle_proves_and_verifies() {
         .apply_signatures(&mut rng, sighash, &[SpendAuthorizingKey::from(&sk)])
         .unwrap();
 
-    verify_bundle(&bundle, &post_nu6_3_vk, TxVersion::V6, true);
+    verify_bundle(&bundle, post_nu6_3_vk, TxVersion::V6, true);
 }

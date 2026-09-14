@@ -24,7 +24,7 @@ use core::{
     mem::size_of_val,
 };
 
-use rand::{CryptoRng, Rng};
+use rand::CryptoRng;
 use secp256k1::{Keypair, Message, Secp256k1, SecretKey, XOnlyPublicKey, schnorr};
 
 use crate::issuance::Error;
@@ -200,7 +200,7 @@ impl IssueAuthKey<ZSASchnorr> {
     /// Real issuance keys should be derived according to [ZIP 32].
     ///
     /// [ZIP 32]: https://zips.z.cash/zip-0032
-    pub fn random(rng: &mut (impl Rng + CryptoRng)) -> Self {
+    pub fn random(rng: &mut impl CryptoRng) -> Self {
         let secp = Secp256k1::signing_only();
         // `secp256k1` still speaks `rand` 0.8; bridge this crate's `rand` 0.10 RNG.
         let (secret_key, _) = secp.generate_keypair(&mut crate::rng_compat::RngCore06::new(rng));
@@ -261,12 +261,12 @@ impl IssueValidatingKey<ZSASchnorr> {
     ///
     /// [issuancekeycomponents]: https://zips.z.cash/zip-0227#derivation-of-issuance-validating-key
     pub fn decode(bytes: &[u8]) -> Result<Self, Error> {
-        if let Some((&algorithm_byte, key_bytes)) = bytes.split_first() {
-            if algorithm_byte == ZSASchnorr::ALGORITHM_BYTE {
-                return XOnlyPublicKey::from_slice(key_bytes)
-                    .map(Self)
-                    .map_err(|_| Error::InvalidIssueValidatingKey);
-            }
+        if let Some((&algorithm_byte, key_bytes)) = bytes.split_first()
+            && algorithm_byte == ZSASchnorr::ALGORITHM_BYTE
+        {
+            return XOnlyPublicKey::from_slice(key_bytes)
+                .map(Self)
+                .map_err(|_| Error::InvalidIssueValidatingKey);
         }
         Err(Error::InvalidIssueValidatingKey)
     }
@@ -291,12 +291,12 @@ impl IssueAuthSig<ZSASchnorr> {
     ///
     /// [issueauthsig]: https://zips.z.cash/zip-0227#issuance-authorization-signing-and-validation
     pub fn decode(bytes: &[u8]) -> Result<Self, Error> {
-        if let Some((&algorithm_byte, key_bytes)) = bytes.split_first() {
-            if algorithm_byte == ZSASchnorr::ALGORITHM_BYTE {
-                return schnorr::Signature::from_slice(key_bytes)
-                    .map(Self)
-                    .map_err(|_| Error::InvalidIssueBundleSig);
-            }
+        if let Some((&algorithm_byte, key_bytes)) = bytes.split_first()
+            && algorithm_byte == ZSASchnorr::ALGORITHM_BYTE
+        {
+            return schnorr::Signature::from_slice(key_bytes)
+                .map(Self)
+                .map_err(|_| Error::InvalidIssueBundleSig);
         }
         Err(Error::InvalidIssueBundleSig)
     }

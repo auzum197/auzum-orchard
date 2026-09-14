@@ -1262,7 +1262,7 @@ mod tests {
         )
     }
 
-    fn random_note_commitment(mut rng: impl Rng + CryptoRng) -> NoteCommitment {
+    fn random_note_commitment(mut rng: impl CryptoRng) -> NoteCommitment {
         NoteCommitment::derive(
             pallas::Point::random(&mut rng).to_affine().to_bytes(),
             pallas::Point::random(&mut rng).to_affine().to_bytes(),
@@ -1404,7 +1404,7 @@ mod tests {
     fn zsa_mock_prover_rejects_wrong_psi_nf() {
         let mut rng = OsRng;
         // The circuit constrains `(split_flag = 0) => (psi_old = psi_nf)`.
-        let (mut circuit, instance) = generate_circuit_instance(false, &mut rng);
+        let (mut circuit, instance) = generate_circuit_instance(false, rng);
         circuit
             .additional_zsa_witnesses
             .as_mut()
@@ -1420,9 +1420,9 @@ mod tests {
 
     #[test]
     fn zsa_mock_prover_rejects_wrong_cm_old() {
-        let mut rng = OsRng;
-        let (mut circuit, instance) = generate_circuit_instance(false, &mut rng);
-        circuit.common_witnesses.cm_old = Value::known(random_note_commitment(&mut rng));
+        let rng = OsRng;
+        let (mut circuit, instance) = generate_circuit_instance(false, rng);
+        circuit.common_witnesses.cm_old = Value::known(random_note_commitment(rng));
         // `cm_old` is the Merkle leaf, so a wrong witness makes the computed root differ from
         // the public anchor. It also feeds the derived note commitment and `nf_old`, whose copy
         // constraints fail alongside.
@@ -1449,16 +1449,16 @@ mod tests {
 
     #[test]
     fn zsa_mock_prover_rejects_wrong_cmx() {
-        let mut rng = OsRng;
-        let (circuit, mut instance) = generate_circuit_instance(false, &mut rng);
-        instance.cmx = random_note_commitment(&mut rng).into();
+        let rng = OsRng;
+        let (circuit, mut instance) = generate_circuit_instance(false, rng);
+        instance.cmx = random_note_commitment(rng).into();
         assert_zsa_rejected_by(&circuit, &instance, "Equality constraint not satisfied");
     }
 
     #[test]
     fn zsa_mock_prover_rejects_wrong_nf_old() {
         let mut rng = OsRng;
-        let (circuit, mut instance) = generate_circuit_instance(false, &mut rng);
+        let (circuit, mut instance) = generate_circuit_instance(false, rng);
         instance.nf_old = Nullifier::dummy(&mut rng);
         assert_zsa_rejected_by(&circuit, &instance, "Equality constraint not satisfied");
     }
@@ -1467,7 +1467,7 @@ mod tests {
     fn zsa_mock_prover_rejects_asset_mismatch() {
         // The `asset` witness must match the asset baked into `cm_old`/`cv_net`.
         let mut rng = OsRng;
-        let (mut circuit, instance) = generate_circuit_instance(false, &mut rng);
+        let (mut circuit, instance) = generate_circuit_instance(false, rng);
         circuit.additional_zsa_witnesses = circuit.additional_zsa_witnesses.map(|mut w| {
             let current_asset = known(&w.asset);
             let another_asset = loop {
@@ -1499,7 +1499,7 @@ mod tests {
     #[test]
     fn zsa_restricted_statement_proves_and_verifies() {
         let mut rng = OsRng;
-        let (circuit, mut instance) = generate_self_transfer_circuit_instance(false, &mut rng);
+        let (circuit, mut instance) = generate_self_transfer_circuit_instance(false, rng);
         instance.cross_address_disabled = true;
 
         let pk = ProvingKey::build(OrchardCircuitVersion::ZSA);
@@ -1515,7 +1515,7 @@ mod tests {
     fn zsa_prove_and_verify() {
         let mut rng = OsRng;
         let (circuits, instances): (Vec<_>, Vec<_>) = iter::once(())
-            .map(|()| generate_circuit_instance(false, &mut rng))
+            .map(|()| generate_circuit_instance(false, rng))
             .unzip();
 
         let vk = VerifyingKey::build(OrchardCircuitVersion::ZSA);
@@ -1563,7 +1563,7 @@ mod tests {
     fn create_rejects_mismatched_proving_key_version() {
         let mut rng = OsRng;
 
-        let (circuit, instance) = generate_circuit_instance(true, &mut rng);
+        let (circuit, instance) = generate_circuit_instance(true, rng);
 
         for pk_version in [
             OrchardCircuitVersion::InsecurePreNu6_2,
@@ -1650,7 +1650,7 @@ mod tests {
             let create_proof = || -> std::io::Result<()> {
                 let mut rng = OsRng;
 
-                let (circuit, instance) = generate_circuit_instance(false, &mut rng);
+                let (circuit, instance) = generate_circuit_instance(false, rng);
                 let instances = core::slice::from_ref(&instance);
 
                 let pk = ProvingKey::build(OrchardCircuitVersion::ZSA);
