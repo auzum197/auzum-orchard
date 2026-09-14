@@ -45,15 +45,17 @@ upstreams by **merging** them into one long-lived branch: nothing is rebased, an
 - `pasta_curves`, `sinsemilla`, `reddsa` → `https://github.com/zakura-core/common.git`
   rev `66ddff6adf11ee134efef0e3e28ac5f72ea92824`
   (packages `zakura-pasta-curves`, `zakura-sinsemilla`, `zakura-reddsa`)
+- `zcash_note_encryption` → `https://github.com/auzum197/zcash_note_encryption.git`
+  rev `c2dba6105908ef9a2e04766cdccac18b0a4a953c` (package `auzum-zcash-note-encryption`)
 
 **Invariant:** the halo2 fork pins the *same* `zakura-core/common` rev, so exactly one
 copy of each `zakura-*` crate may exist in the graph. `just pins` checks both.
 
-`zcash_note_encryption` and `zcash_spec` are patched to the revisions QED-it/orchard pins
-(`zcash/zcash_note_encryption` `40b73b15`, `QED-it/zcash_spec` `d5e84264`). QED-it's
-`sinsemilla` and halo2 patches are replaced by the pins above; the one sinsemilla API they
-add, `CommitDomain::new_with_separate_domains`, is built locally for the OrchardZSA note
-commitment.
+`Cargo.toml` has no `[patch]` section: every fork is a direct dependency, and `just pins`
+fails if one appears. `zcash_spec` is the crates.io release; the ZIP 227 issuance-note `rho`
+derivation that QED-it's `zcash_spec` fork adds is computed locally. QED-it's `sinsemilla` and
+halo2 patches are replaced by the pins above; the one sinsemilla API they add,
+`CommitDomain::new_with_separate_domains`, is built locally for the OrchardZSA note commitment.
 
 ### ZSA
 

@@ -20,8 +20,9 @@
 #   just merge        merge upstream -> zsa -> zakura-orchard into `main`, one at a
 #                     time, --no-ff, stopping at the first conflict. Re-run to
 #                     continue after resolving. Requires a clean tree on `main`.
-#   just pins         verify Cargo.toml pins the revs below and that no duplicate
-#                     `zakura-*` crates exist in the dependency graph
+#   just pins         verify Cargo.toml pins the revs below, has no `[patch]`
+#                     section, and that no duplicate `zakura-*` crates exist in
+#                     the dependency graph
 #   just pins-apply   rewrite the rev strings in Cargo.toml to the vars below
 #                     (for bumping pins; does not commit)
 #   just check        cargo check --all-targets matrix: default / zsa-issuance /
@@ -63,6 +64,11 @@ halo2_pin := "edd368d4d0b703e27e3c115f40a02a5b1759c350"
 # pasta_curves / sinsemilla / reddsa -> zakura-{pasta-curves,sinsemilla,reddsa}
 common_url := "https://github.com/zakura-core/common.git"
 common_pin := "66ddff6adf11ee134efef0e3e28ac5f72ea92824"
+
+# zcash_note_encryption -> auzum-zcash-note-encryption (a renamed package, so a direct
+# dependency: Cargo.toml must carry no `[patch]` section)
+note_encryption_url := "https://github.com/auzum197/zcash_note_encryption.git"
+note_encryption_pin := "c2dba6105908ef9a2e04766cdccac18b0a4a953c"
 
 # -----------------------------------------------------------------------------
 
@@ -140,7 +146,7 @@ status:
         exit 0
     fi
     rc=0
-    for pair in "{{halo2_url}}|{{halo2_pin}}" "{{common_url}}|{{common_pin}}"; do
+    for pair in "{{halo2_url}}|{{halo2_pin}}" "{{common_url}}|{{common_pin}}" "{{note_encryption_url}}|{{note_encryption_pin}}"; do
         url="${pair%%|*}"
         want="${pair##*|}"
         found="$(printf '%s\n' "$manifest" | grep -F "$url" | grep -oE 'rev = "[0-9a-fA-F]+"' | sed -E 's/.*"([0-9a-fA-F]+)".*/\1/' | sort -u || true)"
@@ -158,6 +164,10 @@ status:
             rc=1
         fi
     done
+    if printf '%s\n' "$manifest" | grep -q '^\[patch'; then
+        echo "    main:Cargo.toml has a [patch] section  <-- expected none"
+        rc=1
+    fi
     if [[ "$rc" -ne 0 ]]; then
         echo "    note: pins differ from the justfile vars (expected until the dependency-pin commits land on main)"
     fi
@@ -219,7 +229,7 @@ pins:
     set -euo pipefail
 
     rc=0
-    for pair in "{{halo2_url}}|{{halo2_pin}}" "{{common_url}}|{{common_pin}}"; do
+    for pair in "{{halo2_url}}|{{halo2_pin}}" "{{common_url}}|{{common_pin}}" "{{note_encryption_url}}|{{note_encryption_pin}}"; do
         url="${pair%%|*}"
         want="${pair##*|}"
         found="$(grep -F "$url" Cargo.toml | grep -oE 'rev = "[0-9a-fA-F]+"' | sed -E 's/.*"([0-9a-fA-F]+)".*/\1/' | sort -u || true)"
@@ -243,6 +253,16 @@ pins:
         exit 1
     fi
 
+    # Every fork is a direct git dependency; a `[patch]` would silently swap crates
+    # underneath the pins above.
+    patches="$(grep -n '^\[patch' Cargo.toml || true)"
+    if [[ -n "$patches" ]]; then
+        echo "FAIL Cargo.toml has a [patch] section:" >&2
+        printf '%s\n' "$patches" >&2
+        exit 1
+    fi
+    echo "ok   no [patch] section in Cargo.toml"
+
     echo "==> cargo metadata"
     cargo metadata --format-version 1 >/dev/null
 
@@ -264,7 +284,7 @@ pins-apply:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    for pair in "{{halo2_url}}|{{halo2_pin}}" "{{common_url}}|{{common_pin}}"; do
+    for pair in "{{halo2_url}}|{{halo2_pin}}" "{{common_url}}|{{common_pin}}" "{{note_encryption_url}}|{{note_encryption_pin}}"; do
         url="${pair%%|*}"
         want="${pair##*|}"
         if ! grep -qF "$url" Cargo.toml; then
