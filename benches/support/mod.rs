@@ -8,7 +8,7 @@ use orchard::{
     bundle::{BundleVersion, Flags},
     circuit::{Instance, OrchardCircuitVersion},
     keys::{FullViewingKey, IncomingViewingKey, Scope, SpendAuthorizingKey, SpendingKey},
-    note::{ExtractedNoteCommitment, Note},
+    note::{AssetBase, ExtractedNoteCommitment, Note},
     tree::{MerkleHashOrchard, MerklePath},
     value::NoteValue,
 };
@@ -198,6 +198,7 @@ fn funding_notes(
                 Some(payer_fvk.to_ovk(Scope::External)),
                 *recipient,
                 *value,
+                AssetBase::zatoshi(),
                 MEMO,
             )
             .expect("Ironwood funding outputs are valid");
@@ -462,6 +463,7 @@ fn payment_fixture_with_shape(
                     Some(payer_fvk.to_ovk(Scope::Internal)),
                     *recipient,
                     *output_value,
+                    AssetBase::zatoshi(),
                     MEMO,
                 )
                 .expect("the payer owns its Ironwood change output");
@@ -471,6 +473,7 @@ fn payment_fixture_with_shape(
                     Some(payer_fvk.to_ovk(Scope::External)),
                     *recipient,
                     *output_value,
+                    AssetBase::zatoshi(),
                     MEMO,
                 )
                 .expect("each cross-address Ironwood payment output is valid");

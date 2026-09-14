@@ -1576,6 +1576,7 @@ dependencies = [
  "rand_core 0.10.1",
  "rand_core 0.6.4",
  "rayon",
+ "secp256k1",
  "serde",
  "shardtree",
  "subtle",
@@ -2094,6 +2095,25 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "secp256k1"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9465315bc9d4566e1724f0fffcbcc446268cb522e60f9a27bcded6b19c108113"
+dependencies = [
+ "rand 0.8.8",
+ "secp256k1-sys",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4387882333d3aa8cb20530a17c69a3752e97837832f34f6dccc760e715001d9"
+dependencies = [
+ "cc",
+]
 
 [[package]]
 name = "semver"
@@ -2823,8 +2843,7 @@ dependencies = [
 [[package]]
 name = "zcash_note_encryption"
 version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1cb1b9170c94370e3d66c5cc0877661db743337588b64de7711239eed462198"
+source = "git+https://github.com/zcash/zcash_note_encryption?rev=40b73b157374b62b648a26b94a1f236e5d9c389f#40b73b157374b62b648a26b94a1f236e5d9c389f"
 dependencies = [
  "chacha20 0.9.1",
  "chacha20poly1305",
@@ -2836,8 +2855,7 @@ dependencies = [
 [[package]]
 name = "zcash_spec"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ded3f58b93486aa79b85acba1001f5298f27a46489859934954d262533ee2915"
+source = "git+https://github.com/QED-it/zcash_spec?rev=d5e84264d2ad0646b587a837f4e2424ca64d3a05#d5e84264d2ad0646b587a837f4e2424ca64d3a05"
 dependencies = [
  "blake2b_simd",
 ]

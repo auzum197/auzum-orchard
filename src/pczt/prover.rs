@@ -9,7 +9,7 @@ use crate::{
     Note, Proof,
     builder::SpendInfo,
     circuit::{Circuit, Instance, ProvingKey},
-    note::Rho,
+    note::{AssetBase, Rho},
 };
 
 impl super::Bundle {
@@ -34,7 +34,7 @@ impl super::Bundle {
     /// Also returns an error if required Prover-role fields are missing or invalid,
     /// or if proof creation fails.
     ///
-    /// [`OrchardCircuitVersion::PostNu6_3`]: crate::circuit::OrchardCircuitVersion::PostNu6_3
+    /// [`OrchardCircuitVersion::PostNu6_3`]: crate::circuit_version::OrchardCircuitVersion::PostNu6_3
     pub fn create_proof<R: Rng + CryptoRng>(
         &mut self,
         pk: &ProvingKey,
@@ -83,6 +83,7 @@ impl super::Bundle {
                         .recipient
                         .ok_or(ProverError::MissingRecipient)?,
                     action.spend.value.ok_or(ProverError::MissingValue)?,
+                    AssetBase::zatoshi(),
                     action.spend.rho.ok_or(ProverError::MissingRho)?,
                     action.spend.rseed.ok_or(ProverError::MissingRandomSeed)?,
                     action.spend.note_version,
@@ -105,6 +106,7 @@ impl super::Bundle {
                         .recipient
                         .ok_or(ProverError::MissingRecipient)?,
                     action.output.value.ok_or(ProverError::MissingValue)?,
+                    AssetBase::zatoshi(),
                     Rho::from_nf_old(action.spend.nullifier),
                     action.output.rseed.ok_or(ProverError::MissingRandomSeed)?,
                     action.output.note_version,

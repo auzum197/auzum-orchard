@@ -110,6 +110,10 @@ fn capture_proof(
         .map(|instance| instance.iter().map(|column| &column[..]).collect())
         .collect();
     let instances: Vec<_> = instances.iter().map(|instance| &instance[..]).collect();
+    let circuits = circuits
+        .iter()
+        .map(Circuit::to_vanilla)
+        .collect::<Result<Vec<_>, _>>()?;
 
     // Follow Proof::create's Merkle preparation choice. Keep this orchestration
     // in fixture tooling and check proof bytes and RNG position against that
@@ -125,7 +129,7 @@ fn capture_proof(
         return record_proof(pk, &circuits, &instances, rng);
     }
 
-    record_proof(pk, circuits, &instances, rng)
+    record_proof(pk, &circuits, &instances, rng)
 }
 
 fn capture_fixture(

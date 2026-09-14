@@ -6,8 +6,9 @@ use rand::{CryptoRng, Rng};
 use super::Action;
 use crate::{
     Proof,
-    bundle::{Authorization, Authorized, EffectsOnly},
+    bundle::{Authorization, Authorized, EffectsOnly, validate_action_ciphertext_kind},
     primitives::redpallas::{self, Binding, SpendAuth},
+    sighash_kind::{OrchardBindingSig, OrchardSighashKind, OrchardSpendAuthSig},
 };
 
 impl super::Bundle {
@@ -59,6 +60,7 @@ impl super::Bundle {
         // flags is checked when proving or verifying.
         if let Some(bundle) = &bundle {
             crate::bundle::validate_proof_size(
+                bundle.bundle_version().circuit_version(),
                 &bundle.authorization().proof,
                 bundle.actions().len(),
             )?;
@@ -98,25 +100,28 @@ impl super::Bundle {
             })
             .collect::<Result<_, E>>()?;
 
-        Ok(match NonEmpty::from_vec(actions) {
-            Some(actions) => {
-                let value_balance = i64::try_from(self.value_sum)
-                    .ok()
-                    .and_then(|v| v.try_into().ok())
-                    .ok_or(TxExtractorError::ValueSumOutOfRange)?;
+        Ok(if let Some(actions) = NonEmpty::from_vec(actions) {
+            validate_action_ciphertext_kind(&actions, self.bundle_version)
+                .map_err(TxExtractorError::from)?;
+
+            let value_balance = i64::try_from(self.value_sum)
+                .ok()
+                .and_then(|v| v.try_into().ok())
+                .ok_or(TxExtractorError::ValueSumOutOfRange)?;
 
                 let authorization = bundle_auth(self)?;
 
-                Some(crate::Bundle::from_parts_unchecked(
-                    actions,
-                    self.flags,
-                    value_balance,
-                    self.anchor,
-                    authorization,
-                    self.bundle_version,
-                ))
-            }
-            _ => None,
+            Some(crate::Bundle::from_parts_unchecked(
+                actions,
+                self.flags,
+                value_balance,
+                vec![], //No burn in PCZT V1
+                self.anchor,
+                authorization,
+                self.bundle_version,
+            ))
+        } else {
+            None
         })
     }
 }
@@ -147,6 +152,11 @@ pub enum TxExtractorError {
     },
     /// The bundle's flags cannot be encoded under its value pool and protocol version.
     UnrepresentableFlags,
+    /// Some action's encrypted-note ciphertext is not the kind the bundle's version implies.
+    MismatchedActionCiphertextKind,
+    /// A non-empty burn was provided for a bundle whose version does not permit ZSA, or
+    /// whose flags do not enable ZSA.
+    BurnNotPermitted,
 }
 
 impl From<crate::ActionFromPartsError> for TxExtractorError {
@@ -167,6 +177,10 @@ impl From<crate::bundle::BundleError> for TxExtractorError {
             crate::bundle::BundleError::UnrepresentableFlags => {
                 TxExtractorError::UnrepresentableFlags
             }
+            crate::bundle::BundleError::MismatchedActionCiphertextKind => {
+                TxExtractorError::MismatchedActionCiphertextKind
+            }
+            crate::bundle::BundleError::BurnNotPermitted => TxExtractorError::BurnNotPermitted,
         }
     }
 }
@@ -203,6 +217,15 @@ impl fmt::Display for TxExtractorError {
                 f,
                 "Orchard bundle flags are not representable under its value pool and protocol version",
             ),
+            TxExtractorError::MismatchedActionCiphertextKind => write!(
+                f,
+                "an action's encrypted-note ciphertext kind is inconsistent with the bundle's version",
+            ),
+            TxExtractorError::BurnNotPermitted => write!(
+                f,
+                "a non-empty burn was provided for a bundle whose version does not permit ZSA, \
+                 or whose flags do not enable ZSA",
+            ),
         }
     }
 }
@@ -237,8 +260,16 @@ impl<V> crate::Bundle<Unbound, V> {
         {
             Some(self.map_authorization(
                 &mut (),
-                |_, _, a| a,
-                |_, Unbound { proof, bsk }| Authorized::from_parts(proof, bsk.sign(rng, &sighash)),
+                |_, _, a| OrchardSpendAuthSig::new(OrchardSighashKind::AllEffecting, a),
+                |_, Unbound { proof, bsk }| {
+                    Authorized::from_parts(
+                        proof,
+                        OrchardBindingSig::new(
+                            OrchardSighashKind::AllEffecting,
+                            bsk.sign(rng, &sighash),
+                        ),
+                    )
+                },
             ))
         } else {
             None

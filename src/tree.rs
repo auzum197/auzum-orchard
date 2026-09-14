@@ -949,7 +949,7 @@ mod tests {
     /// tests that follow for that).
     #[test]
     fn combine_batch_matches_empty_root_vectors() {
-        let empty_roots = crate::test_vectors::commitment_tree::test_vectors().empty_roots;
+        let empty_roots = crate::test_vectors::commitment_tree::TEST_VECTOR.empty_roots;
         let width = *BATCH_WIDTHS.last().expect("batch widths are nonempty");
         for level in 0..MERKLE_DEPTH_ORCHARD {
             let child = MerkleHashOrchard::from_bytes(&empty_roots[level]).unwrap();
@@ -975,7 +975,7 @@ mod tests {
     fn batched_levels<const DEPTH: usize>(
         leaves: &[MerkleHashOrchard],
     ) -> Vec<Vec<MerkleHashOrchard>> {
-        let empty_roots = crate::test_vectors::commitment_tree::test_vectors().empty_roots;
+        let empty_roots = crate::test_vectors::commitment_tree::TEST_VECTOR.empty_roots;
         let mut levels = vec![leaves.to_vec()];
         for level in 0..DEPTH {
             let mut nodes = levels[level].clone();
@@ -1016,7 +1016,7 @@ mod tests {
     fn combine_batch_matches_merkle_path_vectors() {
         const DEPTH: usize = 4;
         const LEAVES: usize = 1 << DEPTH;
-        let vectors = crate::test_vectors::merkle_path::test_vectors();
+        let vectors = crate::test_vectors::merkle_path::TEST_VECTORS;
         assert_eq!(vectors.len(), LEAVES);
 
         // Expected node at (level, index), from the authentication paths: the
@@ -1036,7 +1036,7 @@ mod tests {
         // Per-tree folds: each tree's pairs batched on their own (widths 8,
         // 4, 2, 1), with every node and the root checked.
         let mut per_level_nodes: Vec<Vec<Vec<MerkleHashOrchard>>> = Vec::new();
-        for tv in &vectors {
+        for tv in vectors {
             let leaves: Vec<_> = tv
                 .leaves
                 .iter()
@@ -1310,7 +1310,7 @@ mod tests {
 
     #[test]
     fn test_vectors() {
-        let tv_empty_roots = crate::test_vectors::commitment_tree::test_vectors().empty_roots;
+        let tv_empty_roots = crate::test_vectors::commitment_tree::TEST_VECTOR.empty_roots;
 
         for (height, root) in empty_roots().iter().enumerate() {
             assert_eq!(tv_empty_roots[height], root.to_bytes());
@@ -1318,8 +1318,8 @@ mod tests {
 
         let mut tree: ShardTree<MemoryShardStore<MerkleHashOrchard, u32>, 4, 3> =
             ShardTree::new(MemoryShardStore::empty(), 100);
-        for (i, tv) in crate::test_vectors::merkle_path::test_vectors()
-            .into_iter()
+        for (i, tv) in crate::test_vectors::merkle_path::TEST_VECTORS
+            .iter()
             .enumerate()
         {
             let checkpoint_id = u32::try_from(i).unwrap();
@@ -1361,7 +1361,7 @@ mod tests {
     fn empty_roots_incremental() {
         use incrementalmerkletree::Hashable;
 
-        let tv_empty_roots = crate::test_vectors::commitment_tree::test_vectors().empty_roots;
+        let tv_empty_roots = crate::test_vectors::commitment_tree::TEST_VECTOR.empty_roots;
 
         for (level, tv_root) in tv_empty_roots.iter().enumerate() {
             assert_eq!(

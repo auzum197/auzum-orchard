@@ -8,14 +8,20 @@
 
 use core::iter;
 
+use alloc::{format, vec::Vec};
+
 use crate::once::OnceTable;
 use bitvec::{array::BitArray, order::Lsb0};
 use group::ff::{PrimeField, PrimeFieldBits};
-use pasta_curves::pallas;
-use subtle::{ConstantTimeEq, CtOption};
+use pasta_curves::{arithmetic::CurveExt, pallas};
+use subtle::{ConditionallySelectable, ConstantTimeEq, CtOption};
 
 use crate::{
-    constants::{L_ORCHARD_BASE, fixed_bases::NOTE_COMMITMENT_PERSONALIZATION},
+    constants::{
+        L_ORCHARD_BASE,
+        fixed_bases::{NOTE_COMMITMENT_PERSONALIZATION, NOTE_ZSA_COMMITMENT_PERSONALIZATION},
+    },
+    note::AssetBase,
     spec::extract_p,
     value::NoteValue,
 };
@@ -25,6 +31,38 @@ static NOTE_COMMITMENT_DOMAIN: OnceTable<sinsemilla::CommitDomain> = OnceTable::
 fn note_commitment_domain() -> &'static sinsemilla::CommitDomain {
     NOTE_COMMITMENT_DOMAIN
         .get_or_init(|| sinsemilla::CommitDomain::new(NOTE_COMMITMENT_PERSONALIZATION))
+}
+
+/// The OrchardZSA note commitment domain: the `z.cash:ZSA-NoteCommit` hash domain with the
+/// Orchard blind domain `z.cash:Orchard-NoteCommit`, as specified in
+/// [ZIP 226](https://zips.z.cash/zip-0226#note-structure-commitment).
+///
+/// This is `sinsemilla::CommitDomain::new_with_separate_domains(NOTE_ZSA_COMMITMENT_PERSONALIZATION,
+/// NOTE_COMMITMENT_PERSONALIZATION)` from QED-it's sinsemilla fork, which the zakura sinsemilla
+/// crate does not provide.
+struct NoteZsaCommitDomain {
+    m: sinsemilla::HashDomain,
+    r: pallas::Point,
+}
+
+impl NoteZsaCommitDomain {
+    fn new() -> Self {
+        NoteZsaCommitDomain {
+            m: sinsemilla::HashDomain::new(&format!("{}-M", NOTE_ZSA_COMMITMENT_PERSONALIZATION)),
+            r: pallas::Point::hash_to_curve(&format!("{}-r", NOTE_COMMITMENT_PERSONALIZATION))(&[]),
+        }
+    }
+
+    /// $\mathsf{SinsemillaCommit}$, with complete addition for the blinding factor.
+    fn commit(&self, msg: impl Iterator<Item = bool>, r: &pallas::Scalar) -> CtOption<pallas::Point> {
+        self.m.hash_to_point(msg).map(|p| p + self.r * r)
+    }
+}
+
+static NOTE_ZSA_COMMITMENT_DOMAIN: OnceTable<NoteZsaCommitDomain> = OnceTable::new();
+
+fn note_zsa_commitment_domain() -> &'static NoteZsaCommitDomain {
+    NOTE_ZSA_COMMITMENT_DOMAIN.get_or_init(NoteZsaCommitDomain::new)
 }
 
 /// The trapdoor for a note commitment.
@@ -37,6 +75,14 @@ impl NoteCommitTrapdoor {
     #[cfg_attr(feature = "unstable-voting-circuits", visibility::make(pub))]
     pub(crate) fn inner(&self) -> pallas::Scalar {
         self.0
+    }
+
+    /// Constructs a `NoteCommitTrapdoor` from the provided scalar value.
+    ///
+    /// This constructor is only available in tests.
+    #[cfg(test)]
+    pub fn new(trapdoor: pallas::Scalar) -> Self {
+        Self(trapdoor)
     }
 }
 
@@ -53,31 +99,54 @@ impl NoteCommitment {
 }
 
 impl NoteCommitment {
-    /// $NoteCommit^Orchard$.
+    /// $NoteCommit^{Orchard}$ when the asset is zatoshi,
+    /// and $NoteCommit^{OrchardZSA}$ otherwise.
     ///
-    /// Defined in [Zcash Protocol Spec § 5.4.8.4: Sinsemilla commitments][concretesinsemillacommit].
+    /// $NoteCommit^{Orchard}$ is defined in
+    /// [Zcash Protocol Spec § 5.4.8.4: Sinsemilla commitments][concretesinsemillacommit].
+    /// $NoteCommit^{OrchardZSA}$ is defined in
+    /// [ZIP-226: Transfer and Burn of Zcash Shielded Assets][notecommitzsa].
     ///
     /// [concretesinsemillacommit]: https://zips.z.cash/protocol/nu5.pdf#concretesinsemillacommit
-    pub(super) fn derive(
+    /// [notecommitzsa]: https://zips.z.cash/zip-0226#note-structure-and-commitment
+    pub(crate) fn derive(
         g_d: [u8; 32],
         pk_d: [u8; 32],
         v: NoteValue,
+        asset: AssetBase,
         rho: pallas::Base,
         psi: pallas::Base,
         rcm: NoteCommitTrapdoor,
     ) -> CtOption<Self> {
-        let domain = note_commitment_domain();
-        domain
-            .commit(
-                iter::empty()
-                    .chain(BitArray::<_, Lsb0>::new(g_d).iter().by_vals())
-                    .chain(BitArray::<_, Lsb0>::new(pk_d).iter().by_vals())
-                    .chain(v.to_le_bits().iter().by_vals())
-                    .chain(rho.to_le_bits().iter().by_vals().take(L_ORCHARD_BASE))
-                    .chain(psi.to_le_bits().iter().by_vals().take(L_ORCHARD_BASE)),
-                &rcm.0,
-            )
-            .map(NoteCommitment)
+        let common_note_bits = iter::empty()
+            .chain(BitArray::<_, Lsb0>::new(g_d).iter().by_vals())
+            .chain(BitArray::<_, Lsb0>::new(pk_d).iter().by_vals())
+            .chain(v.to_le_bits().iter().by_vals())
+            .chain(rho.to_le_bits().iter().by_vals().take(L_ORCHARD_BASE))
+            .chain(psi.to_le_bits().iter().by_vals().take(L_ORCHARD_BASE))
+            .collect::<Vec<bool>>();
+
+        let zec_note_bits = common_note_bits.clone().into_iter();
+
+        let asset_bits = BitArray::<_, Lsb0>::new(asset.to_bytes());
+        let zsa_note_bits = common_note_bits
+            .into_iter()
+            .chain(asset_bits.iter().by_vals());
+
+        // Evaluate ZEC note commitment
+        let commit_with_zec_domain = note_commitment_domain().commit(zec_note_bits, &rcm.0);
+
+        // Evaluate ZSA note commitment
+        let commit_with_zsa_domain = note_zsa_commitment_domain().commit(zsa_note_bits, &rcm.0);
+
+        // Select the desired commitment in constant-time
+        let commit = commit_with_zsa_domain.and_then(|zsa_commit| {
+            commit_with_zec_domain.map(|zec_commit| {
+                pallas::Point::conditional_select(&zsa_commit, &zec_commit, asset.is_zatoshi())
+            })
+        });
+
+        commit.map(NoteCommitment)
     }
 }
 

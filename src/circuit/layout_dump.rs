@@ -30,12 +30,12 @@ fn capture_action_version(
     ConstraintSystem<pallas::Base>,
     CircuitFixtureRecorder<pallas::Base>,
 ) {
-    let circuit = crate::circuit::Circuit::empty(version);
+    let circuit = crate::circuit::CircuitVanilla::empty(version);
     let mut meta = ConstraintSystem::<pallas::Base>::default();
-    let config = <crate::circuit::Circuit as Halo2Circuit<pallas::Base>>::configure(&mut meta);
+    let config = <crate::circuit::CircuitVanilla as Halo2Circuit<pallas::Base>>::configure(&mut meta);
     let constants = meta.lean_dump_constants();
     let mut recorder = CircuitFixtureRecorder::default();
-    <crate::circuit::Circuit as Halo2Circuit<pallas::Base>>::FloorPlanner::synthesize(
+    <crate::circuit::CircuitVanilla as Halo2Circuit<pallas::Base>>::FloorPlanner::synthesize(
         &mut recorder,
         &circuit,
         config,

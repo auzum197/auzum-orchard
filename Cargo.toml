@@ -53,6 +53,7 @@ rand = { version = "0.10", default-features = false }
 rand_core = { version = "0.10", default-features = false }
 rand_core_06 = { version = "0.6", default-features = false, package = "rand_core" }
 reddsa = { package = "zakura-reddsa", git = "https://github.com/zakura-core/common.git", rev = "66ddff6adf11ee134efef0e3e28ac5f72ea92824", default-features = false }
+secp256k1 = { version = "0.29", features = ["alloc", "rand"], optional = true, default-features = false }
 serde = { version = "1.0", features = ["derive"], default-features = false }
 sinsemilla = { package = "zakura-sinsemilla", git = "https://github.com/zakura-core/common.git", rev = "66ddff6adf11ee134efef0e3e28ac5f72ea92824", default-features = false }
 subtle = { version = "2.6", default-features = false }
@@ -87,7 +88,7 @@ multicore = ["halo2_proofs?/multicore", "dep:maybe-rayon", "maybe-rayon/threads"
 orbits = ["halo2_proofs?/orbits"]
 std = ["corez/std", "group/wnaf-memuse", "reddsa/std"]
 test-dependencies = ["proptest", "rand/std", "rand/std_rng"]
-unstable-frost = []
+unstable-frost = ["dep:visibility"]
 unstable-voting-circuits = ["dep:visibility"]
 verifier-fingerprint = ["circuit", "halo2_proofs/unstable-verifier-fingerprint"]
 # Capture the prover's private tape and complete transcript for formal-model fixtures.
@@ -95,6 +96,8 @@ prover-fingerprint = ["circuit", "halo2_proofs/unstable-prover-fingerprint"]
 circuit-fixtures = ["circuit", "halo2_proofs/unstable-circuit-fixtures"]
 weighted-merkle = []
 x86_64-asm = ["pasta_curves/x86_64-asm", "halo2_proofs?/x86_64-asm"]
+zsa-issuance = ["dep:secp256k1"]
+temporary-zebra = []
 
 [[example]]
 name = "generate_lagrange_coeffs"
@@ -137,3 +140,9 @@ debug = true
 
 [profile.bench]
 debug = true
+
+# The ZSA sources QED-it/orchard (branch zsa1) patches in. Its sinsemilla and halo2 patches are
+# replaced by the zakura and auzum halo2 pins above.
+[patch.crates-io]
+zcash_note_encryption = { git = "https://github.com/zcash/zcash_note_encryption", rev = "40b73b157374b62b648a26b94a1f236e5d9c389f" }
+zcash_spec = { git = "https://github.com/QED-it/zcash_spec", rev = "d5e84264d2ad0646b587a837f4e2424ca64d3a05" }

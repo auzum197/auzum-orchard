@@ -26,15 +26,15 @@ use std::{
 #[cfg(feature = "multicore")]
 use super::CircuitWithPreparedMerklePath;
 use super::{
-    Circuit, INSTANCE_COLUMNS, INSTANCE_ROWS, Instance, K, OrchardCircuitVersion, ProvingKey,
-    VerifyingKey,
+    CircuitVanilla, INSTANCE_COLUMNS, INSTANCE_ROWS, Instance, K, OrchardCircuitVersion,
+    ProvingKey, VerifyingKey,
 };
 use crate::{
     BenchmarkCircuitWitnesses as _, Bundle, NOTE_COMMITMENT_TREE_DEPTH,
     builder::{Builder, BundleType, UnauthorizedBundle},
     bundle::BundleVersion,
     keys::{FullViewingKey, Scope, SpendingKey},
-    note::{ExtractedNoteCommitment, Note, Nullifier, Rho},
+    note::{AssetBase, ExtractedNoteCommitment, Note, Nullifier, Rho},
     tree::{MerkleHashOrchard, MerklePath},
     value::NoteValue,
 };
@@ -405,6 +405,18 @@ fn ironwood_payment_values(
     (spend_values, output_values, total_fee)
 }
 
+/// The Vanilla witnesses of a Vanilla bundle's circuits.
+fn vanilla_circuits(circuits: &[super::Circuit]) -> Vec<CircuitVanilla> {
+    circuits
+        .iter()
+        .map(|circuit| {
+            circuit
+                .to_vanilla()
+                .expect("benchmark bundles are Vanilla bundles")
+        })
+        .collect()
+}
+
 /// Builds a deterministic Ironwood payment with fully populated Actions.
 ///
 /// Spent notes share one external payer IVK but use distinct receivers.
@@ -477,6 +489,7 @@ fn ironwood_payment_fixture(
             Note::new(
                 spend_recipient,
                 spend_value,
+                AssetBase::zatoshi(),
                 rho,
                 bundle_version.note_version(),
                 &mut rng,
@@ -509,6 +522,7 @@ fn ironwood_payment_fixture(
                     Some(spend_fvk.to_ovk(Scope::Internal)),
                     receiver,
                     output_value,
+                    AssetBase::zatoshi(),
                     IRONWOOD_FIXTURE_MEMO,
                 )
                 .unwrap();
@@ -518,6 +532,7 @@ fn ironwood_payment_fixture(
                     Some(spend_fvk.to_ovk(Scope::External)),
                     receiver,
                     output_value,
+                    AssetBase::zatoshi(),
                     IRONWOOD_FIXTURE_MEMO,
                 )
                 .unwrap();
@@ -549,7 +564,7 @@ fn ironwood_payment_fixture(
     );
     let expected_balance = i64::try_from(total_fee).expect("the fixture balance fits into i64");
     assert_eq!(*bundle.value_balance(), expected_balance);
-    let circuits = bundle.benchmark_circuits();
+    let circuits = vanilla_circuits(bundle.benchmark_circuits());
     for ((spend_value, spend_recipient), action_index) in spend_values
         .iter()
         .zip(&spend_recipients)
@@ -619,7 +634,7 @@ fn ironwood_payment_fixtures_have_distinct_fully_populated_actions() {
             ironwood_benchmark_rng(IRONWOOD_FIXTURE_SEED_DOMAIN, action_count),
         );
         assert_eq!(fixture.instances.len(), action_count);
-        let circuits = fixture.bundle.benchmark_circuits();
+        let circuits = vanilla_circuits(fixture.bundle.benchmark_circuits());
         assert_eq!(circuits.len(), action_count);
         for (index, circuit) in circuits.iter().enumerate() {
             for previous in &circuits[..index] {
@@ -680,7 +695,7 @@ fn benchmark_witness_assignment() {
     assert_ne!(worker_count, 0, "RAYON_NUM_THREADS must be nonzero");
 
     let mut meta = ConstraintSystem::<pallas::Base>::default();
-    let config = <Circuit as PlonkCircuit<pallas::Base>>::configure(&mut meta);
+    let config = <CircuitVanilla as PlonkCircuit<pallas::Base>>::configure(&mut meta);
     let constants = [config.constant];
     let row_count = 1_usize << K;
     let usable_rows = ..row_count - (meta.blinding_factors() + 1);
@@ -700,7 +715,7 @@ fn benchmark_witness_assignment() {
             action_count,
             ironwood_benchmark_rng(IRONWOOD_FIXTURE_SEED_DOMAIN, action_count),
         );
-        let circuits = fixture.bundle.benchmark_circuits();
+        let circuits = &vanilla_circuits(fixture.bundle.benchmark_circuits())[..];
         let mut witnesses = fixture
             .instances
             .iter()
