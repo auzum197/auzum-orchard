@@ -125,6 +125,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "auzum-zcash-note-encryption"
+version = "0.4.2"
+source = "git+https://github.com/auzum197/zcash_note_encryption.git?rev=c2dba6105908ef9a2e04766cdccac18b0a4a953c#c2dba6105908ef9a2e04766cdccac18b0a4a953c"
+dependencies = [
+ "chacha20 0.9.1",
+ "chacha20poly1305",
+ "cipher",
+ "rand_core 0.6.4",
+ "subtle",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1552,6 +1564,7 @@ name = "orchard"
 version = "0.15.5"
 dependencies = [
  "aes",
+ "auzum-zcash-note-encryption",
  "bitvec",
  "blake2b_simd",
  "corez",
@@ -1588,7 +1601,6 @@ dependencies = [
  "zakura-pasta-curves",
  "zakura-reddsa",
  "zakura-sinsemilla",
- "zcash_note_encryption",
  "zcash_spec",
  "zip32",
 ]
@@ -2838,18 +2850,6 @@ dependencies = [
  "once_cell",
  "subtle",
  "zakura-pasta-curves",
-]
-
-[[package]]
-name = "zcash_note_encryption"
-version = "0.4.2"
-source = "git+https://github.com/zcash/zcash_note_encryption?rev=40b73b157374b62b648a26b94a1f236e5d9c389f#40b73b157374b62b648a26b94a1f236e5d9c389f"
-dependencies = [
- "chacha20 0.9.1",
- "chacha20poly1305",
- "cipher",
- "rand_core 0.6.4",
- "subtle",
 ]
 
 [[package]]
