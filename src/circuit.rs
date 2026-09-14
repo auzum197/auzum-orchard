@@ -90,10 +90,12 @@ fn orchard_k11_params() -> Params<vesta::Affine> {
 
 /// Shape of the public instance consumed by one Orchard Action proof.
 ///
-/// A statement with `enable_zsa = 0` is encoded without the trailing `ENABLE_ZSA` row:
-/// halo2_proofs zero-pads instance values, so the proof is identical, and the shorter
-/// shape keeps the prepared public-instance commitment route of `halo2_proofs`, which
-/// is restricted to exactly [`INSTANCE_ROWS`] rows.
+/// The ZSA circuit reads the `ENABLE_ZSA` row, so it always receives
+/// [`INSTANCE_ROWS_ZSA`] rows. The Vanilla circuits never read that row, so a Vanilla
+/// statement (which has `enable_zsa = 0`) is encoded without it: halo2_proofs commits
+/// to the instance column zero-padded, so the proof is identical, and the shorter shape
+/// keeps the prepared public-instance commitment route of `halo2_proofs`, which is
+/// restricted to exactly [`INSTANCE_ROWS`] rows.
 const INSTANCE_COLUMNS: usize = 1;
 const INSTANCE_ROWS: usize = 10;
 const INSTANCE_ROWS_ZSA: usize = 11;
@@ -814,9 +816,12 @@ impl Instance {
     /// halo2_proofs zero-pads instance values, so a statement that leaves the public input
     /// zero encodes exactly as it did before the public input existed.
     ///
-    /// For the same reason a statement with `enable_zsa = 0` is encoded without the
-    /// `ENABLE_ZSA` row (see [`INSTANCE_ROWS`]).
-    fn to_halo2_instance(&self) -> [Vec<vesta::Scalar>; INSTANCE_COLUMNS] {
+    /// For the same reason a Vanilla statement is encoded without the `ENABLE_ZSA` row
+    /// when proved or verified with a Vanilla `circuit_version` (see [`INSTANCE_ROWS`]).
+    fn to_halo2_instance(
+        &self,
+        circuit_version: OrchardCircuitVersion,
+    ) -> [Vec<vesta::Scalar>; INSTANCE_COLUMNS] {
         let mut instance = alloc::vec![vesta::Scalar::zero(); INSTANCE_ROWS_ZSA];
 
         instance[ANCHOR] = self.anchor.inner();
@@ -840,7 +845,7 @@ impl Instance {
         instance[DISABLE_CROSS_ADDRESS] =
             vesta::Scalar::from(u64::from(self.cross_address_disabled));
         instance[ENABLE_ZSA] = vesta::Scalar::from(u64::from(self.enable_zsa));
-        if !self.enable_zsa {
+        if !circuit_version.is_zsa() && !self.enable_zsa {
             instance.truncate(INSTANCE_ROWS);
         }
 
@@ -896,7 +901,10 @@ impl Proof {
             return Err(plonk::Error::InvalidInstances);
         }
 
-        let instances: Vec<_> = instances.iter().map(|i| i.to_halo2_instance()).collect();
+        let instances: Vec<_> = instances
+            .iter()
+            .map(|i| i.to_halo2_instance(pk.circuit_version))
+            .collect();
         let instances: Vec<Vec<_>> = instances
             .iter()
             .map(|i| i.iter().map(|c| &c[..]).collect())
@@ -990,7 +998,10 @@ impl Proof {
             return Err(plonk::Error::InvalidInstances);
         }
 
-        let instances: Vec<_> = instances.iter().map(|i| i.to_halo2_instance()).collect();
+        let instances: Vec<_> = instances
+            .iter()
+            .map(|i| i.to_halo2_instance(vk.circuit_version))
+            .collect();
         let instances: Vec<Vec<_>> = instances
             .iter()
             .map(|i| i.iter().map(|c| &c[..]).collect())
@@ -1019,11 +1030,12 @@ impl Proof {
         &self,
         batch: &mut BatchVerifier<vesta::Affine>,
         instances: Vec<Instance>,
+        circuit_version: OrchardCircuitVersion,
     ) {
         let instances = instances
             .iter()
             .map(|i| {
-                i.to_halo2_instance()
+                i.to_halo2_instance(circuit_version)
                     .into_iter()
                     .map(|c| c.into_iter().collect())
                     .collect()

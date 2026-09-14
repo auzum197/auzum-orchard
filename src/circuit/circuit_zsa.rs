@@ -1284,7 +1284,7 @@ mod tests {
             K,
             &circuit.to_zsa().expect("ZSA witnesses are present"),
             instance
-                .to_halo2_instance()
+                .to_halo2_instance(OrchardCircuitVersion::ZSA)
                 .iter()
                 .map(|p| p.to_vec())
                 .collect(),
@@ -1509,6 +1509,22 @@ mod tests {
 
         let proof = Proof::create(&pk, &[circuit], instances, &mut rng).unwrap();
         assert!(proof.verify(&vk, instances).is_ok());
+    }
+
+    // A zatoshi statement may leave `enableZSA` zero. The ZSA circuit still reads that
+    // instance row, so the prover must receive it; halo2 rejects a missing row with
+    // `BoundsFailure`.
+    #[test]
+    fn zsa_statement_with_zsa_disabled_proves_and_verifies() {
+        let mut rng = OsRng;
+        let (circuit, mut instance) = generate_circuit_instance(true, rng);
+        instance.enable_zsa = false;
+
+        let keys = crate::cached_test_keys(OrchardCircuitVersion::ZSA);
+        let instances = &[instance];
+
+        let proof = Proof::create(keys.proving_key(), &[circuit], instances, &mut rng).unwrap();
+        assert!(proof.verify(keys.verifying_key(), instances).is_ok());
     }
 
     #[test]

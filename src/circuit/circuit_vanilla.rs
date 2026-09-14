@@ -1130,9 +1130,10 @@ mod tests {
 
     #[test]
     fn halo2_instance_matches_prepared_commitment_shape() {
-        let (_, mut instance) = generate_circuit_instance(OsRng, OrchardCircuitVersion::PostNu6_3);
+        let version = OrchardCircuitVersion::PostNu6_3;
+        let (_, mut instance) = generate_circuit_instance(OsRng, version);
 
-        let halo2_instance = instance.to_halo2_instance();
+        let halo2_instance = instance.to_halo2_instance(version);
         // These are the exact shape and Boolean suffix required by the
         // prepared public-instance commitment route in `halo2_proofs`. Keep
         // the literal expectations here so protocol-layout drift fails this
@@ -1156,13 +1157,19 @@ mod tests {
 
         instance.cross_address_disabled = true;
         assert_eq!(
-            instance.to_halo2_instance()[0][super::DISABLE_CROSS_ADDRESS],
+            instance.to_halo2_instance(version)[0][super::DISABLE_CROSS_ADDRESS],
             vesta::Scalar::one()
         );
 
-        // A ZSA-enabled statement carries the additional `enableZSA` row.
+        // The ZSA circuit reads the `enableZSA` row, so a ZSA key always receives it, even
+        // for a statement that leaves it zero.
+        let zsa = OrchardCircuitVersion::ZSA;
+        assert_eq!(
+            instance.to_halo2_instance(zsa)[0].len(),
+            super::super::INSTANCE_ROWS_ZSA
+        );
         instance.enable_zsa = true;
-        let halo2_instance = instance.to_halo2_instance();
+        let halo2_instance = instance.to_halo2_instance(zsa);
         assert_eq!(halo2_instance[0].len(), super::super::INSTANCE_ROWS_ZSA);
         assert_eq!(
             halo2_instance[0][super::super::ENABLE_ZSA],
@@ -1185,7 +1192,7 @@ mod tests {
                 K,
                 &circuit.common_witnesses,
                 instance
-                    .to_halo2_instance()
+                    .to_halo2_instance(OrchardCircuitVersion::PostNu6_3)
                     .iter()
                     .map(|p| p.to_vec())
                     .collect(),
@@ -1248,7 +1255,7 @@ mod tests {
         let pk = keys.proving_key();
         let vk = keys.verifying_key();
 
-        let raw_instances = instance.to_halo2_instance();
+        let raw_instances = instance.to_halo2_instance(OrchardCircuitVersion::FixedPostNu6_2);
         let raw_instances: Vec<_> = raw_instances.iter().map(|i| &i[..]).collect();
         let raw_instances = [&raw_instances[..]];
 
@@ -1385,7 +1392,7 @@ mod tests {
                     K,
                     &circuit.common_witnesses,
                     instance
-                        .to_halo2_instance()
+                        .to_halo2_instance(circuit_version)
                         .iter()
                         .map(|p| p.to_vec())
                         .collect()

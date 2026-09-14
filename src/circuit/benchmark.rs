@@ -728,7 +728,7 @@ fn benchmark_witness_assignment() {
                     .collect(),
                 primary: config.primary,
                 instance: instance
-                    .to_halo2_instance()
+                    .to_halo2_instance(OrchardCircuitVersion::PostNu6_3)
                     .into_iter()
                     .next()
                     .expect("Orchard has one instance column")
@@ -980,7 +980,7 @@ fn create_ironwood_batch_fixtures(
             let instances = fixture
                 .instances
                 .iter()
-                .map(Instance::to_halo2_instance)
+                .map(|i| i.to_halo2_instance(OrchardCircuitVersion::PostNu6_3))
                 .map(|columns| {
                     columns
                         .into_iter()

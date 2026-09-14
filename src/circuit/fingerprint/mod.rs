@@ -45,7 +45,7 @@ fn raw_instances(instances: &[super::Instance]) -> Vec<Vec<Vec<vesta::Scalar>>> 
         .iter()
         .map(|instance| {
             instance
-                .to_halo2_instance()
+                .to_halo2_instance(OrchardCircuitVersion::PostNu6_3)
                 .iter()
                 .map(|column| column.to_vec())
                 .collect()

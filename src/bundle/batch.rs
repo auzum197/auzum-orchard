@@ -113,10 +113,11 @@ impl<'a> BatchValidator<'a> {
             ),
         });
 
-        bundle
-            .authorization()
-            .proof()
-            .add_to_batch(&mut self.proofs, bundle.to_instances());
+        bundle.authorization().proof().add_to_batch(
+            &mut self.proofs,
+            bundle.to_instances(),
+            self.vk.circuit_version(),
+        );
 
         Ok(())
     }

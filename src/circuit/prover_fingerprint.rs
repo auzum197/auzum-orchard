@@ -104,7 +104,10 @@ fn capture_proof(
     instances: &[Instance],
     rng: impl Rng,
 ) -> Result<Proof, plonk::Error> {
-    let instances: Vec<_> = instances.iter().map(Instance::to_halo2_instance).collect();
+    let instances: Vec<_> = instances
+        .iter()
+        .map(|i| i.to_halo2_instance(pk.circuit_version))
+        .collect();
     let instances: Vec<Vec<_>> = instances
         .iter()
         .map(|instance| instance.iter().map(|column| &column[..]).collect())
