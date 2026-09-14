@@ -26,6 +26,7 @@ pub use self::asset_base::AssetId;
 const PRF_EXPAND_PERSONALIZATION: &[u8; 16] = b"Zcash_ExpandSeed";
 const ZIP2005_ORCHARD_QR_RCM_DOMAIN_SEPARATOR: u8 = 0x0B;
 const ZSA_ORCHARD_RCM_DOMAIN_SEPARATOR: u8 = 0x0E;
+const ORCHARD_DERIVED_ISSUE_RHO_DOMAIN_SEPARATOR: u8 = 0x84;
 
 #[cfg(not(feature = "unstable-voting-circuits"))]
 pub(crate) mod commitment;
@@ -688,11 +689,33 @@ pub(crate) fn rho_for_issuance_note(
     index_action: u32,
     index_note: u32,
 ) -> Rho {
-    Rho(to_base(PrfExpand::ORCHARD_DERIVED_ISSUE_RHO.with(
+    Rho(to_base(prf_expand_derived_issue_rho(
         &nullifier.to_bytes(),
         &index_action.to_le_bytes(),
         &index_note.to_le_bytes(),
     )))
+}
+
+/// `PRF^expand_nf([0x84] || I2LEOSP_32(index_action) || I2LEOSP_32(index_note))`, the
+/// issuance-note `rho` expansion of [ZIP 227], where
+/// `PRF^expand_sk(t) = BLAKE2b-512("Zcash_ExpandSeed", sk || t)`.
+///
+/// [ZIP 227]: https://zips.z.cash/zip-0227
+fn prf_expand_derived_issue_rho(
+    nullifier: &[u8; 32],
+    index_action: &[u8; 4],
+    index_note: &[u8; 4],
+) -> [u8; 64] {
+    *Blake2bParams::new()
+        .hash_length(64)
+        .personal(PRF_EXPAND_PERSONALIZATION)
+        .to_state()
+        .update(nullifier)
+        .update(&[ORCHARD_DERIVED_ISSUE_RHO_DOMAIN_SEPARATOR])
+        .update(index_action)
+        .update(index_note)
+        .finalize()
+        .as_array()
 }
 
 /// An encrypted note.
@@ -949,6 +972,41 @@ mod tests {
         assert_ne!(split_note.nullifier(&fvk), derive(note.psi(), true));
         // A note with no split seed uses its own psi and does not add NULLIFIER_L (is_split=false).
         assert_eq!(note.nullifier(&fvk), derive(note.psi(), false));
+    }
+
+    /// Known-answer vectors for the issuance-note `rho` derivation, captured from
+    /// `PrfExpand::ORCHARD_DERIVED_ISSUE_RHO` in QED-it/zcash_spec `d5e84264` (the revision
+    /// QED-it/orchard pins), which the local expansion was checked against.
+    #[test]
+    fn rho_for_issuance_note_known_answers() {
+        // (nullifier, index_action, index_note, rho)
+        const VECTORS: [(&str, u32, u32, &str); 3] = [
+            (
+                "4cbdcef339e7fc395f56bb2b00771719346aca8597f53729cc43ee65cdd0c311",
+                0,
+                0,
+                "3b109a19703695a2d61073c8b2c1912ca03d0babce736d24d2eeb25d0a688619",
+            ),
+            (
+                "5ebdf747e04624be4be303eed4f43661a0646d7e015d8e565b7ff16dabbd683e",
+                1,
+                2,
+                "64a12979a05f342d449468e0e119f52f06ab1621197cfecf439e160952747030",
+            ),
+            (
+                "dd69e8b30f2e38e3a3f7dcb55dc66a430aff4668c5f8d004b2ea1225574ed80e",
+                0x0102_0304,
+                u32::MAX,
+                "5a0717c2bd9cfac5c2c8438ef794888a5cffdd3c7046d365af93ded122326019",
+            ),
+        ];
+        for (nf, index_action, index_note, rho) in VECTORS {
+            let nf = Nullifier::from_bytes(&hex::decode(nf).unwrap().try_into().unwrap()).unwrap();
+            assert_eq!(
+                hex::encode(rho_for_issuance_note(&nf, index_action, index_note).to_bytes()),
+                rho
+            );
+        }
     }
 
     /// `rcm_zsa` binds the note's asset, so two ZSA notes differing only in their asset have

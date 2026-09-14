@@ -140,8 +140,3 @@ debug = true
 
 [profile.bench]
 debug = true
-
-# The ZSA sources QED-it/orchard (branch zsa1) patches in. Its sinsemilla and halo2 patches are
-# replaced by the zakura and auzum halo2 pins above.
-[patch.crates-io]
-zcash_spec = { git = "https://github.com/QED-it/zcash_spec", rev = "d5e84264d2ad0646b587a837f4e2424ca64d3a05" }
