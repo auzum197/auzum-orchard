@@ -31,6 +31,9 @@
 #   just rerere-on    enable git rerere, so a redone/aborted merge replays your
 #                     earlier conflict resolutions
 #
+# `zsa-rebased` is QED-it's zsa1 delta as one commit on zcash-upstream/main, for reading;
+# `just merge` does not use it.
+#
 # Legacy branches `zakura-patches` and `zakura-rebased` come from
 # an earlier rebase-based approach and are superseded; do not use them.
 

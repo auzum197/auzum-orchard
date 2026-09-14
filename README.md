@@ -28,6 +28,10 @@ upstreams by **merging** them into one long-lived branch: nothing is rebased, an
   force-updated by `scripts/zakura-orchard.sh [zakura-rev] [branch]`. `just sync`
   regenerates it at the pinned monorepo rev below (not at `zakura/main`, which moves
   ahead of the pin) and reports how many commits the pin is behind.
+- **`zsa-rebased`** (local) — QED-it's `zsa1` Zcash Shielded Assets delta as one commit on
+  `zcash-upstream/main`, for reading the ZSA change on its own. `zsa1` has too many
+  merges to replay commit by commit; its history is in QED-it/orchard. Not consumed by
+  `just merge`.
 - `zakura-patches`, `zakura-rebased` — **superseded**. They come from an earlier
   rebase-based approach and are kept only for reference until deleted.
 
