@@ -214,14 +214,16 @@ rev <code>edd368d4d0b703e27e3c115f40a02a5b1759c350</code>
 <li><code>pasta_curves</code>, <code>sinsemilla</code>, <code>reddsa</code> → <code>https://github.com/zakura-core/common.git</code>
 rev <code>66ddff6adf11ee134efef0e3e28ac5f72ea92824</code>
 (packages <code>zakura-pasta-curves</code>, <code>zakura-sinsemilla</code>, <code>zakura-reddsa</code>)</li>
+<li><code>zcash_note_encryption</code> → <code>https://github.com/auzum197/zcash_note_encryption.git</code>
+rev <code>c2dba6105908ef9a2e04766cdccac18b0a4a953c</code> (package <code>auzum-zcash-note-encryption</code>)</li>
 </ul>
 <p><strong>Invariant:</strong> the halo2 fork pins the <em>same</em> <code>zakura-core/common</code> rev, so exactly one
 copy of each <code>zakura-*</code> crate may exist in the graph. <code>just pins</code> checks both.</p>
-<p><code>zcash_note_encryption</code> and <code>zcash_spec</code> are patched to the revisions QED-it/orchard pins
-(<code>zcash/zcash_note_encryption</code> <code>40b73b15</code>, <code>QED-it/zcash_spec</code> <code>d5e84264</code>). QED-it's
-<code>sinsemilla</code> and halo2 patches are replaced by the pins above; the one sinsemilla API they
-add, <code>CommitDomain::new_with_separate_domains</code>, is built locally for the OrchardZSA note
-commitment.</p>
+<p><code>Cargo.toml</code> has no <code>[patch]</code> section: every fork is a direct dependency, and <code>just pins</code>
+fails if one appears. <code>zcash_spec</code> is the crates.io release; the ZIP 227 issuance-note <code>rho</code>
+derivation that QED-it's <code>zcash_spec</code> fork adds is computed locally. QED-it's <code>sinsemilla</code> and
+halo2 patches are replaced by the pins above; the one sinsemilla API they add,
+<code>CommitDomain::new_with_separate_domains</code>, is built locally for the OrchardZSA note commitment.</p>
 <h3 id="zsa"><a class="header" href="#zsa">ZSA</a></h3>
 <p>ZSA support comes from <a href="https://github.com/QED-it/orchard">QED-it/orchard</a> (<code>zsa1</code>), the
 implementation of ZIP 226 and ZIP 227. Nothing is taken from <code>zcash-shielded-assets</code>.
